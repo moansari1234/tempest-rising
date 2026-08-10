@@ -3,7 +3,8 @@ import { AnimationData } from './AnimationData.js';
 
 const RimuruSheetConfig = {
   url: '/public/rimuru.png',
-  rows: 10,
+  cellWidth: 128,
+  cellHeight: 128,
   animations: {
     idle: { row: 0, frames: 7 },
     walk: { row: 1, frames: 7 },
@@ -63,11 +64,9 @@ export class SpriteParser {
   }
 
   async sliceSpriteSheet(entityKey, img, config) {
-    const rows = config.rows;
-    const cellHeight = img.height / rows;
+    const cellWidth = config.cellWidth || (img.width / (config.cols || 1));
+    const cellHeight = config.cellHeight || (img.height / (config.rows || 1));
     
-    // Assume square cells
-    const cellWidth = cellHeight;
     const cols = Math.floor(img.width / cellWidth);
     
     for (const [animKey, animInfo] of Object.entries(config.animations)) {
