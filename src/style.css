@@ -1,0 +1,39 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #050A10; /* Dark abyss */
+  color: white;
+  font-family: 'Courier New', Courier, monospace; /* Retro feel */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden; /* No scrollbars */
+}
+
+#game-container {
+  position: relative;
+  /* Maintain 16:9 aspect ratio */
+  width: 100vw;
+  height: 56.25vw;
+  max-height: 100vh;
+  max-width: 177.78vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+}
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated; /* Crucial for crispy pixel art */
+  /* Hide the cursor during gameplay */
+  cursor: crosshair; 
+}
+
+/* We can add UI overlay styling here later */
