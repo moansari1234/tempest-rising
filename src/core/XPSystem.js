@@ -1,4 +1,5 @@
 import { CONSTANTS } from '../data/constants.js';
+import { Transform, PlayerInput, Health, CombatData } from '../ecs/Components.js';
 
 export class XPSystem {
   constructor() {
@@ -18,7 +19,6 @@ export class XPSystem {
     
     if (context && context.floaterQueue) {
         // Find player position for floater
-        const { Transform, PlayerInput } = require('../ecs/Components.js'); // dynamic require to avoid circular deps if any
         const players = context.world ? context.world.queryEntities([Transform, PlayerInput]) : [];
         if (players.length > 0) {
             const transform = context.world.getComponent(players[0], Transform);
@@ -60,7 +60,6 @@ export class XPSystem {
             });
             
             // Apply scaling instantly
-            const { Health, CombatData } = require('../ecs/Components.js');
             const health = context.world.getComponent(players[0], Health);
             const combat = context.world.getComponent(players[0], CombatData);
             if (health && combat) {
