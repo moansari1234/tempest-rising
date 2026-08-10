@@ -168,12 +168,23 @@ export class RenderSystem {
               ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;
           }
           
+          // Draw at sprite's natural size, centered on the entity's position.
+          // For the 128x128 sheet frames, use a display scale.
+          // For the 16x16 pixel-art sprites, use 2x scale.
+          const isLargeSprite = bitmap.width >= 64; // sheet frames are 128px
+          const displayW = isLargeSprite ? bitmap.width * 0.5 : bitmap.width * 2;
+          const displayH = isLargeSprite ? bitmap.height * 0.5 : bitmap.height * 2;
+          
+          // Center horizontally on the entity, bottom-align vertically
+          const drawX = transform.x + transform.width / 2 - displayW / 2;
+          const drawY = transform.y + transform.height - displayH;
+          
           if (transform.facing === 'left') {
-              ctx.translate(transform.x + transform.width, transform.y);
+              ctx.translate(drawX + displayW, drawY);
               ctx.scale(-1, 1);
-              ctx.drawImage(bitmap, 0, 0, transform.width, transform.height);
+              ctx.drawImage(bitmap, 0, 0, displayW, displayH);
           } else {
-              ctx.drawImage(bitmap, transform.x, transform.y, transform.width, transform.height);
+              ctx.drawImage(bitmap, drawX, drawY, displayW, displayH);
           }
           
           if (sprite.color) {
@@ -181,9 +192,9 @@ export class RenderSystem {
               ctx.globalAlpha = 0.4;
               ctx.fillStyle = sprite.color;
               if (transform.facing === 'left') {
-                  ctx.fillRect(0, 0, transform.width, transform.height);
+                  ctx.fillRect(0, 0, displayW, displayH);
               } else {
-                  ctx.fillRect(transform.x, transform.y, transform.width, transform.height);
+                  ctx.fillRect(drawX, drawY, displayW, displayH);
               }
               ctx.globalCompositeOperation = 'source-over';
               ctx.globalAlpha = 1;
@@ -191,7 +202,7 @@ export class RenderSystem {
 
           ctx.restore();
       } else {
-          // Fallback: draw a colored rectangle if no bitmap found
+          // Fallback: draw a colored rectangle at transform size
           ctx.save();
           if (health && health.iFrameTimer > 0) {
               ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;

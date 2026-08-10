@@ -29,9 +29,10 @@ export class SpriteParser {
     let rimuruLoaded = false;
     try {
       const rimuruImage = await this.loadImage(RimuruSheetConfig.url);
+      console.log(`[SpriteParser] Rimuru sheet loaded: ${rimuruImage.width}x${rimuruImage.height}`);
       await this.sliceSpriteSheet('rimuru', rimuruImage, RimuruSheetConfig);
       rimuruLoaded = true;
-      console.log('[SpriteParser] Loaded external Rimuru sprite sheet');
+      console.log('[SpriteParser] Loaded external Rimuru sprite sheet successfully');
     } catch (err) {
       console.warn('[SpriteParser] Could not load /rimuru.png. Falling back to pixel map.', err);
       // Override AnimationData.rimuru to match the fallback definition in SpriteMaps
