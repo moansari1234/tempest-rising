@@ -3,8 +3,15 @@ import { CONSTANTS } from '../../data/constants.js';
 import { AnimationData } from '../../sprites/AnimationData.js';
 
 export class RenderSystem {
+  constructor() {
+    this.animAccumulator = 0;
+  }
+
   update(world, dt, context) {
     const { ctx, camera, canvas, spriteParser } = context;
+
+    // Use real frame time for animations (dt from World.render is 0)
+    const animDt = context._frameDt || (1/60);
 
     // Clear screen
     ctx.fillStyle = '#050A10';
@@ -45,7 +52,7 @@ export class RenderSystem {
       const velocity = world.getComponent(id, Velocity);
       
       const ai = world.getComponent(id, AI);
-      const input = world.getComponent(id, PlayerInput); // Need to check if player
+      const input = world.getComponent(id, PlayerInput);
       const health = world.getComponent(id, Health);
 
       // Determine target animation state
@@ -53,20 +60,23 @@ export class RenderSystem {
       if (health && !health.alive) {
           targetAnim = 'death';
       } else if (ai) {
-          // If it's an AI, map its state to animation
           if (ai.state === 'patrol' || ai.state === 'chase') {
               targetAnim = 'run';
-          } else if (ai.state === 'attack' || ai.state === 'attack_lunge' || ai.state === 'attack_spit' || ai.state === 'hurt') {
-              const baseAnim = ai.state.startsWith('attack') ? 'attack' : ai.state;
-              targetAnim = AnimationData[sprite.spriteKey][baseAnim] ? baseAnim : 'idle';
+          } else if (ai.state === 'attack' || ai.state === 'attack_lunge' || ai.state === 'attack_spit') {
+              targetAnim = AnimationData[sprite.spriteKey] && AnimationData[sprite.spriteKey]['attack'] ? 'attack' : 'idle';
+          } else if (ai.state === 'hurt') {
+              targetAnim = AnimationData[sprite.spriteKey] && AnimationData[sprite.spriteKey]['hurt'] ? 'hurt' : 'idle';
           } else {
               targetAnim = 'idle';
           }
       } else if (input) {
-          // If it's the player, map input.state directly to the animation rows
           const state = input.state;
           if (state === 'attack_light') {
               targetAnim = 'attack_light';
+          } else if (state === 'attack_heavy') {
+              targetAnim = 'attack_light'; // Use attack_light visual for heavy charge
+          } else if (state === 'attack_recovery') {
+              targetAnim = 'attack_light'; // Show last attack frame during recovery
           } else if (state === 'predator') {
               targetAnim = 'predator';
           } else if (state === 'hurt') {
@@ -74,21 +84,26 @@ export class RenderSystem {
           } else if (state === 'jump' || state === 'fall') {
               targetAnim = 'jump';
           } else if (state === 'dash') {
-              targetAnim = 'run'; // fallback to running animation for dash
+              targetAnim = 'run';
           } else if (state === 'parry') {
-              targetAnim = 'special'; // use row 10 (special) for parry stance
+              targetAnim = 'special';
           } else if (velocity && Math.abs(velocity.vx) > 10) {
               targetAnim = 'run';
           } else {
               targetAnim = 'idle';
           }
       } else if (velocity) {
-          // General velocity-based fallback
           if (Math.abs(velocity.vx) > 10) {
               targetAnim = 'run';
           } else {
               targetAnim = 'idle';
           }
+      }
+
+      // Validate that animData exists for this key, fallback to idle
+      const entityAnims = AnimationData[sprite.spriteKey];
+      if (!entityAnims || !entityAnims[targetAnim]) {
+          targetAnim = 'idle';
       }
 
       // Reset animation frame if the animation state changes
@@ -101,17 +116,16 @@ export class RenderSystem {
       // Vacuum VFX
       if (input && input.state === 'predator') {
           ctx.save();
-          ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; // Blue lines
+          ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
           ctx.lineWidth = 2;
           ctx.beginPath();
           
           const centerX = transform.x + transform.width / 2;
           const centerY = transform.y + transform.height / 2;
           
-          // Draw a bunch of converging lines for a quick vacuum effect
           for (let i = 0; i < 8; i++) {
               const angle = (Math.PI * 2 / 8) * i + (performance.now() / 200);
-              const distOut = 150 - ((performance.now() / 5) % 150); // move inward
+              const distOut = 150 - ((performance.now() / 5) % 150);
               const distIn = Math.max(0, distOut - 20);
               
               ctx.moveTo(centerX + Math.cos(angle) * distOut, centerY + Math.sin(angle) * distOut);
@@ -121,16 +135,15 @@ export class RenderSystem {
           ctx.restore();
       }
 
-      // Update animation timer
-      let animData = AnimationData[sprite.spriteKey][sprite.currentAnimation];
+      // Update animation timer using real frame delta
+      let animData = AnimationData[sprite.spriteKey] ? AnimationData[sprite.spriteKey][sprite.currentAnimation] : null;
       if (!animData) {
-          console.warn(`Missing animation data for ${sprite.spriteKey} -> ${sprite.currentAnimation}`);
           sprite.currentAnimation = 'idle';
-          animData = AnimationData[sprite.spriteKey]['idle'];
+          animData = AnimationData[sprite.spriteKey] ? AnimationData[sprite.spriteKey]['idle'] : null;
       }
       
       if (animData) {
-          sprite.frameTimer += dt;
+          sprite.frameTimer += animDt;
           if (sprite.frameTimer >= animData.frameTime) {
               sprite.frameTimer = 0;
               sprite.frameIndex++;
@@ -138,7 +151,7 @@ export class RenderSystem {
                   if (animData.loop) {
                       sprite.frameIndex = 0;
                   } else {
-                      sprite.frameIndex = animData.frames - 1; // stick to last frame
+                      sprite.frameIndex = animData.frames - 1;
                   }
               }
           }
@@ -149,7 +162,11 @@ export class RenderSystem {
 
       if (bitmap) {
           ctx.save();
-          // The bitmap is 16x16, we draw it at transform width/height (32x32)
+          
+          // I-frame flash effect
+          if (health && health.iFrameTimer > 0) {
+              ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;
+          }
           
           if (transform.facing === 'left') {
               ctx.translate(transform.x + transform.width, transform.y);
@@ -173,27 +190,17 @@ export class RenderSystem {
           }
 
           ctx.restore();
+      } else {
+          // Fallback: draw a colored rectangle if no bitmap found
+          ctx.save();
+          if (health && health.iFrameTimer > 0) {
+              ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;
+          }
+          ctx.fillStyle = sprite.color || (input ? '#3B82F6' : ai ? '#22C55E' : '#888888');
+          ctx.fillRect(transform.x, transform.y, transform.width, transform.height);
+          ctx.restore();
       }
     }
-
-    // DEBUG: Draw Hurtboxes (Disabled for production)
-    /*
-    const hurtboxes = world.queryEntities([Transform, Hurtbox]);
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-    for (const id of hurtboxes) {
-        const transform = world.getComponent(id, Transform);
-        const hurtbox = world.getComponent(id, Hurtbox);
-        ctx.fillRect(transform.x + hurtbox.offsetX, transform.y + hurtbox.offsetY, hurtbox.width, hurtbox.height);
-    }
-
-    // DEBUG: Draw Hitboxes
-    const hitboxes = world.queryEntities([Transform, Hitbox]);
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-    for (const id of hitboxes) {
-        const transform = world.getComponent(id, Transform);
-        ctx.fillRect(transform.x, transform.y, transform.width, transform.height);
-    }
-    */
 
     // UI: Draw Enemy HP Bars and Devour Indicators (In Camera Space)
     const enemyEntities = world.queryEntities([Transform, Health, AI]);
@@ -202,14 +209,14 @@ export class RenderSystem {
         const health = world.getComponent(id, Health);
         
         if (!health.alive && health.hp === 0) {
-            // Draw DEVOUR indicator if dead
-            ctx.fillStyle = '#facc15'; // yellow-400
+            ctx.fillStyle = '#facc15';
             ctx.font = 'bold 12px monospace';
-            ctx.fillText('[E] DEVOUR', transform.x - 10, transform.y - 10);
+            ctx.textAlign = 'center';
+            ctx.fillText('[E] DEVOUR', transform.x + transform.width / 2, transform.y - 10);
+            ctx.textAlign = 'left';
             continue;
         }
 
-        // Only draw HP bar if missing health
         if (health.hp < health.maxHp) {
             const barWidth = 32;
             const barHeight = 4;
@@ -219,117 +226,20 @@ export class RenderSystem {
             ctx.fillStyle = '#000000';
             ctx.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
             
-            ctx.fillStyle = '#ef4444'; // red-500
+            ctx.fillStyle = '#ef4444';
             ctx.fillRect(barX, barY, barWidth * (health.hp / health.maxHp), barHeight);
 
-            // Draw DEVOUR indicator if < 50%
             if (health.hp < health.maxHp * 0.5) {
                 ctx.fillStyle = '#facc15';
                 ctx.font = 'bold 10px monospace';
-                ctx.fillText('[E]', transform.x + 10, transform.y - 15);
-            }
-        }
-    }
-
-    ctx.restore(); // Restore to Screen Space
-
-    // UI: Draw Player HUD (Screen Space)
-    const players = world.queryEntities([Transform, Health, PlayerInput]);
-    if (players.length > 0) {
-        const playerHealth = world.getComponent(players[0], Health);
-        
-        // HP Bar Background
-        ctx.fillStyle = '#1e293b'; // slate-800
-        ctx.fillRect(20, 20, 200, 20);
-        
-        // HP Bar Fill
-        ctx.fillStyle = '#22c55e'; // green-500
-        ctx.fillRect(20, 20, 200 * (playerHealth.hp / playerHealth.maxHp), 20);
-        
-        // HP Bar Border
-        ctx.strokeStyle = '#f8fafc'; // slate-50
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 20, 200, 20);
-
-        // HP Text
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px monospace';
-        ctx.fillText(`HP: ${Math.floor(playerHealth.hp)}/${playerHealth.maxHp}`, 30, 35);
-    }
-
-    // UI: Draw Boss HP Bar (Screen Space, Top Center)
-    const bosses = world.queryEntities([Transform, Health, AI]);
-    for (const id of bosses) {
-        const ai = world.getComponent(id, AI);
-        if (ai.type === 'boss_serpent') {
-            const bossHealth = world.getComponent(id, Health);
-            
-            // Only draw if alive or recently dead (hp > 0 or for a short time after)
-            if (bossHealth.hp > 0 || !bossHealth.alive) {
-                const barWidth = 400;
-                const barHeight = 24;
-                const barX = (canvas.width / 2) - (barWidth / 2);
-                const barY = 40;
-                
-                // Background
-                ctx.fillStyle = '#1e293b';
-                ctx.fillRect(barX, barY, barWidth, barHeight);
-                
-                // Fill (Purple/Red for boss)
-                ctx.fillStyle = '#9333ea'; // purple-600
-                ctx.fillRect(barX, barY, barWidth * (bossHealth.hp / bossHealth.maxHp), barHeight);
-                
-                // Border
-                ctx.strokeStyle = '#f8fafc';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(barX, barY, barWidth, barHeight);
-                
-                // Boss Name
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 16px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('TEMPEST SERPENT', canvas.width / 2, barY - 10);
-                
-                // Reset text align for other UI
+                ctx.fillText('[E]', transform.x + transform.width / 2, transform.y - 15);
                 ctx.textAlign = 'left';
             }
         }
     }
 
-    // GAME OVER Screen
-    if (players.length > 0) {
-        const playerHealth = world.getComponent(players[0], Health);
-        if (playerHealth && !playerHealth.alive) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = '#ef4444';
-            ctx.font = 'bold 48px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '16px monospace';
-            ctx.fillText('Refresh the page to try again.', canvas.width / 2, canvas.height / 2 + 40);
-            
-            ctx.textAlign = 'left';
-        }
-    }
-
-    // VICTORY Screen
-    try {
-        if (localStorage.getItem('tempest_save_boss_defeated') === 'true') {
-            ctx.fillStyle = '#22c55e';
-            ctx.font = 'bold 48px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('VICTORY!', canvas.width / 2, 120);
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '16px monospace';
-            ctx.fillText('You have devoured the Tempest Serpent!', canvas.width / 2, 160);
-            
-            ctx.textAlign = 'left';
-        }
-    } catch(e) {}
+    ctx.restore(); // Restore to Screen Space
+    // All further UI is handled by UISystem
   }
 }

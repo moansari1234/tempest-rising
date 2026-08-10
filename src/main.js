@@ -11,7 +11,6 @@ import { AISystem } from './ecs/systems/AISystem.js';
 import { SpriteParser } from './sprites/SpriteParser.js';
 import { createPlayer } from './prefabs/PlayerPrefab.js';
 import { LevelManager } from './core/LevelManager.js';
-import { Levels } from './data/levels.js';
 import { UISystem } from './ui/UISystem.js';
 import { XPSystem } from './core/XPSystem.js';
 import { AudioManager } from './core/AudioManager.js';
@@ -119,6 +118,9 @@ class Game {
     // Camera updates after physics but before render to track correctly
     // We pass frameTime for smooth lerping independent of fixed timestep
     this.camera.update(frameTime);
+
+    // Pass real frame time for animation updates in RenderSystem
+    this.context._frameDt = frameTime;
 
     // Render happens every animation frame
     this.render();
