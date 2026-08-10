@@ -31,24 +31,55 @@ export class RenderSystem {
       
       const ai = world.getComponent(id, AI);
       const input = world.getComponent(id, PlayerInput); // Need to check if player
-      
-      // Basic animation state machine
-      if (ai) {
+      const health = world.getComponent(id, Health);
+
+      // Determine target animation state
+      let targetAnim = 'idle';
+      if (health && !health.alive) {
+          targetAnim = 'death';
+      } else if (ai) {
           // If it's an AI, map its state to animation
           if (ai.state === 'patrol' || ai.state === 'chase') {
-              sprite.currentAnimation = 'run';
+              targetAnim = 'run';
           } else if (ai.state === 'attack' || ai.state === 'hurt') {
-              sprite.currentAnimation = AnimationData[sprite.spriteKey][ai.state] ? ai.state : 'idle';
+              targetAnim = AnimationData[sprite.spriteKey][ai.state] ? ai.state : 'idle';
           } else {
-              sprite.currentAnimation = 'idle';
+              targetAnim = 'idle';
+          }
+      } else if (input) {
+          // If it's the player, map input.state directly to the animation rows
+          const state = input.state;
+          if (state === 'attack_light') {
+              targetAnim = 'attack_light';
+          } else if (state === 'predator') {
+              targetAnim = 'predator';
+          } else if (state === 'hurt') {
+              targetAnim = 'hurt';
+          } else if (state === 'jump' || state === 'fall') {
+              targetAnim = 'jump';
+          } else if (state === 'dash') {
+              targetAnim = 'run'; // fallback to running animation for dash
+          } else if (state === 'parry') {
+              targetAnim = 'special'; // use row 10 (special) for parry stance
+          } else if (velocity && Math.abs(velocity.vx) > 10) {
+              targetAnim = 'run';
+          } else {
+              targetAnim = 'idle';
           }
       } else if (velocity) {
-          // Player fallback based on velocity
+          // General velocity-based fallback
           if (Math.abs(velocity.vx) > 10) {
-              sprite.currentAnimation = 'run';
+              targetAnim = 'run';
           } else {
-              sprite.currentAnimation = 'idle';
+              targetAnim = 'idle';
           }
+      }
+
+      // Reset animation frame if the animation state changes
+      if (sprite.currentAnimation !== targetAnim) {
+          sprite.currentAnimation = targetAnim;
+          sprite.frameIndex = 0;
+          sprite.frameTimer = 0;
       }
 
       // Vacuum VFX
