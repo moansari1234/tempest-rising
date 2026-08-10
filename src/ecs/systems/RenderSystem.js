@@ -13,6 +13,21 @@ export class RenderSystem {
     // Save context state for camera transform
     ctx.save();
     
+    // Determine Boss Zoom
+    let bossAlive = false;
+    const allAIs = world.queryEntities([AI, Health]);
+    for (const id of allAIs) {
+        const ai = world.getComponent(id, AI);
+        const health = world.getComponent(id, Health);
+        if (ai.type === 'boss_serpent' && health.alive) {
+            bossAlive = true;
+            break;
+        }
+    }
+    if (camera.setZoom) {
+        camera.setZoom(bossAlive ? CONSTANTS.CAMERA_BOSS_ZOOM : 1.0);
+    }
+
     // Apply camera
     camera.apply(ctx);
 
@@ -41,8 +56,9 @@ export class RenderSystem {
           // If it's an AI, map its state to animation
           if (ai.state === 'patrol' || ai.state === 'chase') {
               targetAnim = 'run';
-          } else if (ai.state === 'attack' || ai.state === 'hurt') {
-              targetAnim = AnimationData[sprite.spriteKey][ai.state] ? ai.state : 'idle';
+          } else if (ai.state === 'attack' || ai.state === 'attack_lunge' || ai.state === 'attack_spit' || ai.state === 'hurt') {
+              const baseAnim = ai.state.startsWith('attack') ? 'attack' : ai.state;
+              targetAnim = AnimationData[sprite.spriteKey][baseAnim] ? baseAnim : 'idle';
           } else {
               targetAnim = 'idle';
           }
@@ -142,6 +158,20 @@ export class RenderSystem {
           } else {
               ctx.drawImage(bitmap, transform.x, transform.y, transform.width, transform.height);
           }
+          
+          if (sprite.color) {
+              ctx.globalCompositeOperation = 'source-atop';
+              ctx.globalAlpha = 0.4;
+              ctx.fillStyle = sprite.color;
+              if (transform.facing === 'left') {
+                  ctx.fillRect(0, 0, transform.width, transform.height);
+              } else {
+                  ctx.fillRect(transform.x, transform.y, transform.width, transform.height);
+              }
+              ctx.globalCompositeOperation = 'source-over';
+              ctx.globalAlpha = 1;
+          }
+
           ctx.restore();
       }
     }

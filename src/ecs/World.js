@@ -57,18 +57,29 @@ export class World {
     this.systems.push(system);
   }
 
-  update(dt, context) {
-    // Run all systems
+  updateLogic(dt, context) {
+    // Run logic systems (everything except RenderSystem and UISystem)
     for (const system of this.systems) {
-      system.update(this, dt, context);
+      if (system.constructor.name !== 'RenderSystem' && system.constructor.name !== 'UISystem') {
+        system.update(this, dt, context);
+      }
     }
 
-    // Cleanup deleted entities at the end of the frame
+    // Cleanup deleted entities at the end of the logic frame
     if (this.entitiesToDelete.length > 0) {
       for (const id of this.entitiesToDelete) {
         this.entities.delete(id);
       }
       this.entitiesToDelete = [];
+    }
+  }
+
+  render(context) {
+    // Run rendering systems
+    for (const system of this.systems) {
+      if (system.constructor.name === 'RenderSystem' || system.constructor.name === 'UISystem') {
+        system.update(this, 0, context);
+      }
     }
   }
 }

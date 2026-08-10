@@ -5,16 +5,16 @@ const RimuruSheetConfig = {
   url: '/rimuru.png',
   rows: 10,
   animations: {
-    idle: { row: 0, frames: 6 },
-    walk: { row: 1, frames: 6 },
+    idle: { row: 0, frames: 7 },
+    walk: { row: 1, frames: 7 },
     run: { row: 2, frames: 6 },
     jump: { row: 3, frames: 6 },
     attack_light: { row: 4, frames: 6 },
     predator: { row: 5, frames: 6 },
-    hurt: { row: 6, frames: 4 },
+    hurt: { row: 6, frames: 6 },
     death: { row: 7, frames: 6 },
     victory: { row: 8, frames: 6 },
-    special: { row: 9, frames: 8 }
+    special: { row: 9, frames: 6 }
   }
 };
 

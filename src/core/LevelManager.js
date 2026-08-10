@@ -1,18 +1,28 @@
 import { CONSTANTS } from '../data/constants.js';
+import { Levels } from '../data/levels.js';
 
 export class LevelManager {
   constructor() {
+    this.currentLevelKey = null;
+    this.currentLevelData = null;
     this.currentLevel = null;
     this.width = 0;
     this.height = 0;
     this.tileSize = CONSTANTS.TILE_SIZE * 2; // e.g. 16 * 2 = 32px scaled visually
   }
 
-  loadLevel(levelData) {
+  loadLevel(levelKey) {
+    const levelData = Levels[levelKey];
+    if (!levelData) {
+        console.error("Level not found:", levelKey);
+        return;
+    }
+    this.currentLevelKey = levelKey;
+    this.currentLevelData = levelData;
     this.currentLevel = levelData.layout;
     this.width = levelData.width;
     this.height = levelData.height;
-    console.log(`[LevelManager] Loaded level: ${this.width}x${this.height}`);
+    console.log(`[LevelManager] Loaded level: ${levelKey} (${this.width}x${this.height})`);
   }
 
   getTileAtPixel(x, y) {
@@ -55,6 +65,15 @@ export class LevelManager {
       }
     }
     return false;
+  }
+
+  checkTransition(rect) {
+    if (!this.currentLevelData || !this.currentLevelData.next) return null;
+    const tile = this.getTileAtPixel(rect.x + rect.w / 2, rect.y + rect.h / 2);
+    if (tile === '>' || tile === '<') {
+        return this.currentLevelData.next;
+    }
+    return null;
   }
 
   render(ctx, camera, spriteParser) {

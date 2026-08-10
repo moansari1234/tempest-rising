@@ -147,9 +147,17 @@ export class CombatSystem {
                       console.log('PREDATOR ABSORB!');
                       world.removeEntity(eId); // Completely remove from world
                       
+                      if (context.audio) context.audio.play('absorb');
+                      if (context.floaterQueue) {
+                          context.floaterQueue.push({ x: eCenter, y: eTransform.y, text: 'DEVOURED!', color: '#00FFFF', lifetime: 1.5, maxLifetime: 1.5 });
+                      }
+                      
+                      if (eCombat && context.xpSystem) context.xpSystem.awardXP(eCombat.xpValue, 1.5, context);
+                      
                       // Check if it's the boss
                       const eAI = world.getComponent(eId, AI);
                       if (eAI && eAI.type === 'boss_serpent') {
+                          if (context.xpSystem) context.xpSystem.awardBossBonus();
                           // Increase max HP and Save
                           pHealth.maxHp += 50;
                           pHealth.hp = pHealth.maxHp;
@@ -202,6 +210,16 @@ export class CombatSystem {
         targetInput.stateTimer = 0;
         
         console.log('PARRY SUCCESS!');
+        if (context.audio) context.audio.play('parry');
+        if (context.floaterQueue) {
+            context.floaterQueue.push({
+                x: targetTransform.x + targetTransform.width / 2,
+                y: targetTransform.y,
+                text: 'PARRY!',
+                color: '#FFD700',
+                lifetime: 1.0, maxLifetime: 1.0
+            });
+        }
 
         // Huge hitstop
         if (context.hitstopTimer < 0.3) {
@@ -229,10 +247,29 @@ export class CombatSystem {
 
     // Apply Damage
     health.hp -= damage;
+    
+    if (context.audio) context.audio.play(targetInput ? 'player_hurt' : 'hit');
+    if (context.floaterQueue) {
+        context.floaterQueue.push({
+            x: targetTransform.x + targetTransform.width / 2,
+            y: targetTransform.y,
+            text: `-${Math.floor(damage)}`,
+            color: targetInput ? '#FF4444' : '#FFFFFF',
+            lifetime: 1.0, maxLifetime: 1.0
+        });
+    }
+
     if (health.hp <= 0) {
       health.hp = 0;
       health.alive = false;
       if (targetVelocity) targetVelocity.vx = 0; // Prevent sliding endlessly when dead
+      
+      // XP Award
+      if (!targetInput && combatData && context.xpSystem) {
+          const comboStage = hitbox.properties ? hitbox.properties.comboStage : 1;
+          const comboMult = CONSTANTS.COMBO_XP_MULTS ? CONSTANTS.COMBO_XP_MULTS[comboStage] || 1.0 : 1.0;
+          context.xpSystem.awardXP(combatData.xpValue, comboMult, context);
+      }
     }
 
     // Give I-frames
@@ -245,7 +282,14 @@ export class CombatSystem {
       
       const mass = combatData ? combatData.mass : 1.0;
       targetVelocity.vx = (dir * hitbox.knockback) / mass;
-      targetVelocity.vy = -150 / mass; 
+      
+      if (hitbox.properties && hitbox.properties.launcher === 'up') {
+          targetVelocity.vy = -250 / mass;
+      } else if (hitbox.properties && hitbox.properties.launcher === 'heavy') {
+          targetVelocity.vy = -400 / mass;
+      } else {
+          targetVelocity.vy = -150 / mass; 
+      }
     }
 
     // Cancel attack state if hit (Player)

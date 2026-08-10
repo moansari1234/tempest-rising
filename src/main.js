@@ -12,6 +12,9 @@ import { SpriteParser } from './sprites/SpriteParser.js';
 import { createPlayer } from './prefabs/PlayerPrefab.js';
 import { LevelManager } from './core/LevelManager.js';
 import { Levels } from './data/levels.js';
+import { UISystem } from './ui/UISystem.js';
+import { XPSystem } from './core/XPSystem.js';
+import { AudioManager } from './core/AudioManager.js';
 
 class Game {
   constructor() {
@@ -24,11 +27,13 @@ class Game {
 
     // Initialize core managers
     this.gameStateManager = new GameStateManager();
+    this.audio = new AudioManager();
+    this.xpSystem = new XPSystem();
     this.inputManager = new InputManager();
     this.camera = new Camera(CONSTANTS.NATIVE_WIDTH, CONSTANTS.NATIVE_HEIGHT);
     
     this.levelManager = new LevelManager();
-    this.levelManager.loadLevel(Levels.chapter1_start);
+    this.levelManager.loadLevel('chapter1_intro');
     
     this.camera.setLevelBounds(this.levelManager.width * this.levelManager.tileSize, this.levelManager.height * this.levelManager.tileSize);
 
@@ -42,6 +47,7 @@ class Game {
     this.world.registerSystem(new AISystem());
     this.world.registerSystem(new CombatSystem());
     this.world.registerSystem(new RenderSystem());
+    this.world.registerSystem(new UISystem());
 
     // Setup Game Context to pass to systems
     this.context = {
@@ -52,6 +58,10 @@ class Game {
       gameStateManager: this.gameStateManager,
       spriteParser: this.spriteParser,
       levelManager: this.levelManager,
+      audio: this.audio,
+      xpSystem: this.xpSystem,
+      floaterQueue: [],
+      world: this.world,
       hitstopTimer: 0 // Global Hitstop
     };
 
@@ -64,9 +74,10 @@ class Game {
   }
 
   async init() {
+    await this.audio.init();
     await this.start();
     
-    this.gameStateManager.setState(GameState.PLAYING);
+    this.gameStateManager.setState(GameState.MENU);
 
     // Start loop
     requestAnimationFrame((t) => this.loop(t));
@@ -79,9 +90,10 @@ class Game {
     // Create Player using Prefab
     const playerId = createPlayer(this.world, 100, 100);
 
-    // Create Tempest Serpent Boss
-    const { createTempestSerpent } = await import('./prefabs/BossPrefab.js');
-    createTempestSerpent(this.world, 800, 100); // Spawn further right in the arena
+    // Create a Goblin for chapter1_intro
+    const { createGoblin } = await import('./prefabs/GoblinPrefab.js');
+    createGoblin(this.world, 600, 100);
+    createGoblin(this.world, 800, 100);
 
     // Tell camera to follow player
     this.camera.setTarget(this.world.getComponent(playerId, Transform));
@@ -118,61 +130,36 @@ class Game {
   }
 
   update(dt) {
-    if (this.gameStateManager.getState() === GameState.PLAYING) {
-        this.world.update(dt, this.context);
-    }
-  }
-
-  render() {
-      // The RenderSystem is technically called in update, but we can call it explicitly here 
-      // or move RenderSystem out of the fixed timestep loop if we want interpolation later.
-      // For Phase 1, we just run the render system directly with frameTime 0
-      // since our RenderSystem is registered in the World.
-      // Wait, currently World.update calls ALL systems. We should probably separate logic and render.
-  }
-}
-
-// Separate out update and render systems in World for Phase 1 fix:
-World.prototype.updateLogic = function(dt, context) {
-    for (const system of this.systems) {
-        if (system.constructor.name !== 'RenderSystem') {
-            system.update(this, dt, context);
+    const state = this.gameStateManager.getState();
+    
+    if (this.inputManager.isActionJustPressed('pause')) {
+        if (state === GameState.PLAYING) {
+            this.gameStateManager.setState(GameState.PAUSED);
+        } else if (state === GameState.PAUSED) {
+            this.gameStateManager.setState(GameState.PLAYING);
         }
+        this.inputManager.consumeAction('pause');
     }
-    // Cleanup
-    if (this.entitiesToDelete.length > 0) {
-      for (const id of this.entitiesToDelete) {
-        this.entities.delete(id);
-      }
-      this.entitiesToDelete = [];
+    
+    if (state === GameState.PAUSED && this.inputManager.isActionJustPressed('quit')) {
+        this.gameStateManager.setState(GameState.MENU);
+        this.inputManager.consumeAction('quit');
     }
-};
 
-World.prototype.render = function(context) {
-    for (const system of this.systems) {
-        if (system.constructor.name === 'RenderSystem') {
-            system.update(this, 0, context);
-        }
-    }
-};
-
-// Override Game update and render
-Game.prototype.update = function(dt) {
-    if (this.gameStateManager.getState() === GameState.PLAYING) {
+    if (state === GameState.PLAYING) {
         if (this.context.hitstopTimer > 0) {
             this.context.hitstopTimer -= dt;
-            // Freeze logic! Don't update the world logic if hitstop is active.
-            // But we might want particles or UI to still update later.
-            // For now, full freeze:
             return; 
         }
         this.world.updateLogic(dt, this.context);
     }
-};
+  }
 
-Game.prototype.render = function() {
-    this.world.render(this.context);
-};
+  render() {
+      this.world.render(this.context);
+  }
+}
+
 
 // Start game
 window.onload = () => {

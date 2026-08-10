@@ -19,6 +19,7 @@ export class InputManager {
       'skill3': ['3'],
       'skill4': ['4'],
       'pause': ['Escape', 'p', 'P'],
+      'quit': ['q', 'Q'],
       'interact': ['Enter', 'e', 'E']
     };
     

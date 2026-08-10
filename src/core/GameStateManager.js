@@ -16,9 +16,11 @@ export class GameStateManager {
   }
 
   setState(newState) {
+    if (this.currentState === newState) return;
     this.previousState = this.currentState;
     this.currentState = newState;
     console.log(`[GameState] Transition: ${this._getStateName(this.previousState)} -> ${this._getStateName(this.currentState)}`);
+    if (this.onStateChange) this.onStateChange(this.currentState, this.previousState);
   }
 
   getState() {

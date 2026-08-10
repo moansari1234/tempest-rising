@@ -1,5 +1,6 @@
 import { Transform, Velocity, PlayerInput, Collider, Hitbox, Health } from '../Components.js';
 import { CONSTANTS } from '../../data/constants.js';
+import { GameState } from '../../core/GameStateManager.js';
 
 export class PhysicsSystem {
   update(world, dt, context) {
@@ -14,6 +15,10 @@ export class PhysicsSystem {
 
       // Timers
       if (input.dashCooldown > 0) input.dashCooldown -= dt;
+      if (input.comboResetTimer > 0) {
+          input.comboResetTimer -= dt;
+          if (input.comboResetTimer <= 0) input.comboHit = 0;
+      }
       if (collider.onGround) {
           input.coyoteTimer = CONSTANTS.COYOTE_TIME;
           input.canDoubleJump = true;
@@ -33,8 +38,42 @@ export class PhysicsSystem {
           input.stateTimer -= dt;
           velocity.vx = 0; // Root motion during attack (can be adjusted)
           if (input.stateTimer <= 0) {
-              input.state = 'idle';
+              if (input.comboHit >= 3) {
+                  input.state = 'attack_recovery';
+                  input.stateTimer = 0.5; // Finisher recovery
+              } else {
+                  input.state = 'idle';
+              }
           }
+      } else if (input.state === 'attack_heavy') {
+          input.chargeTimer = (input.chargeTimer || 0) + dt;
+          velocity.vx = 0;
+          
+          if (input.chargeTimer >= 2.0) input.chargeLevel = 2;
+          else if (input.chargeTimer >= 1.0) input.chargeLevel = 1;
+          else input.chargeLevel = 0;
+          
+          if (!inputManager.isActionHeld('attackHeavy') || input.chargeTimer > 2.5) {
+              const hitboxId = world.createEntity();
+              let hbW = 48, hbH = 48, dmgMult = 1.5, kb = 300, hitstop = CONSTANTS.HITSTOP_HEAVY;
+              if (input.chargeLevel === 1) { hbW = 64; hbH = 56; dmgMult = 2.5; kb = 500; hitstop = CONSTANTS.HITSTOP_CRITICAL; }
+              else if (input.chargeLevel === 2) { hbW = 80; hbH = 64; dmgMult = 4.0; kb = 700; hitstop = CONSTANTS.HITSTOP_CRITICAL; }
+              
+              const hbX = transform.facing === 'right' ? transform.x + transform.width : transform.x - hbW;
+              world.addComponent(hitboxId, new Transform(hbX, transform.y + transform.height - hbH, hbW, hbH));
+              world.addComponent(hitboxId, new Hitbox(id, 10 * dmgMult, kb, 0.1, hitstop, 'heavy'));
+              
+              if (context.audio) context.audio.play('attack_heavy');
+              
+              input.state = 'attack_recovery';
+              input.stateTimer = 0.4;
+              input.chargeTimer = 0;
+              input.chargeLevel = 0;
+          }
+      } else if (input.state === 'attack_recovery') {
+          input.stateTimer -= dt;
+          velocity.vx = 0;
+          if (input.stateTimer <= 0) input.state = 'idle';
       } else if (input.state === 'parry') {
           input.stateTimer -= dt;
           velocity.vx = 0;
@@ -69,36 +108,57 @@ export class PhysicsSystem {
                   input.dashCooldown = CONSTANTS.DASH_COOLDOWN;
                   velocity.vx = (transform.facing === 'right' ? 1 : -1) * CONSTANTS.DASH_SPEED;
                   inputManager.consumeAction('dash');
+                  if (context.audio) context.audio.play('dash');
               }
               // Parry
               else if (inputManager.isActionJustPressed('parry')) {
                   input.state = 'parry';
                   input.stateTimer = CONSTANTS.PARRY_WINDOW;
                   inputManager.consumeAction('parry');
+                  if (context.audio) context.audio.play('parry'); // Maybe swing sound?
               }
               // Predator Skill
               else if (inputManager.isActionHeld('skillPredator')) {
                   input.state = 'predator';
+                  if (context.audio) context.audio.play('absorb');
               }
-              // Attack
+              // Attack Light
               else if (inputManager.isActionJustPressed('attackLight')) {
+                  const comboWindow = CONSTANTS.LIGHT_COMBO_TIMING ? CONSTANTS.LIGHT_COMBO_TIMING[input.comboHit || 0] : 0.3;
+                  input.comboHit = (input.comboHit || 0) + 1;
+                  if (input.comboHit > 3) input.comboHit = 1;
+                  input.comboResetTimer = comboWindow + 0.5; // Window to hit again
+                  
                   input.state = 'attack_light';
-                  input.stateTimer = CONSTANTS.LIGHT_COMBO_TIMING ? CONSTANTS.LIGHT_COMBO_TIMING[0] : 0.3;
-                  input.comboHit = 1;
+                  input.stateTimer = comboWindow;
                   inputManager.consumeAction('attackLight');
+                  if (context.audio) context.audio.play('attack_light');
+
+                  let dmgMult = 1.0;
+                  let kb = 200;
+                  let hbW = 40, hbH = 40;
+                  let hitstop = CONSTANTS.HITSTOP_LIGHT;
+                  
+                  if (input.comboHit === 2) { dmgMult = 1.2; kb = 200; hbH = 48; }
+                  if (input.comboHit === 3) { dmgMult = 1.8; kb = 400; hbW = 52; hbH = 52; hitstop = CONSTANTS.HITSTOP_CRITICAL; }
 
                   // Spawn Hitbox
                   const hitboxId = world.createEntity();
-                  const hbX = transform.facing === 'right' ? transform.x + transform.width : transform.x - 32;
-                  world.addComponent(hitboxId, new Transform(hbX, transform.y, 32, transform.height));
-                  world.addComponent(hitboxId, new Hitbox(
-                      id, // owner
-                      10, // damage
-                      200, // knockback
-                      0.1, // lifetime
-                      CONSTANTS.HITSTOP_LIGHT, // hitstopMs
-                      'neutral'
-                  ));
+                  const hbX = transform.facing === 'right' ? transform.x + transform.width : transform.x - hbW;
+                  world.addComponent(hitboxId, new Transform(hbX, transform.y + transform.height - hbH, hbW, hbH));
+                  
+                  const hitbox = new Hitbox(id, 10 * dmgMult, kb, 0.1, hitstop, 'light');
+                  hitbox.properties = { comboStage: input.comboHit };
+                  if (input.comboHit === 2) hitbox.properties.launcher = 'up';
+                  if (input.comboHit === 3) hitbox.properties.launcher = 'heavy';
+                  world.addComponent(hitboxId, hitbox);
+              }
+              // Attack Heavy
+              else if (inputManager.isActionJustPressed('attackHeavy')) {
+                  input.state = 'attack_heavy';
+                  input.chargeTimer = 0;
+                  input.chargeLevel = 0;
+                  inputManager.consumeAction('attackHeavy');
               }
           }
 
@@ -108,10 +168,12 @@ export class PhysicsSystem {
                   velocity.vy = CONSTANTS.JUMP_FORCE;
                   input.coyoteTimer = 0;
                   inputManager.consumeAction('jump');
+                  if (context.audio) context.audio.play('jump');
               } else if (input.canDoubleJump) {
                   velocity.vy = CONSTANTS.DOUBLE_JUMP_FORCE;
                   input.canDoubleJump = false;
                   inputManager.consumeAction('jump');
+                  if (context.audio) context.audio.play('jump');
               }
           }
 
@@ -154,6 +216,31 @@ export class PhysicsSystem {
           transform.x += velocity.vx * dt;
           if (levelManager) {
               const rect = { x: transform.x + collider.offsetX, y: transform.y + collider.offsetY, w: collider.width, h: collider.height };
+              
+              // Transition Check
+              const nextLevel = levelManager.checkTransition(rect);
+              if (nextLevel && input && context.gameStateManager.getState() === GameState.PLAYING) {
+                  context.gameStateManager.setState(GameState.LEVEL_TRANSITION);
+                  if (!context.transitioning) {
+                      context.transitioning = true;
+                      setTimeout(() => {
+                          levelManager.loadLevel(nextLevel);
+                          context.camera.setLevelBounds(levelManager.width * levelManager.tileSize, levelManager.height * levelManager.tileSize);
+                          transform.x = 64;
+                          transform.y = 100;
+                          context.transitioning = false;
+                          context.gameStateManager.setState(GameState.PLAYING);
+                          
+                          if (nextLevel === 'chapter1_boss') {
+                              import('../../prefabs/BossPrefab.js').then(module => {
+                                  module.createTempestSerpent(world, 800, 100);
+                              }).catch(()=>{});
+                          }
+                      }, 500);
+                  }
+                  continue; // Skip further physics updates for player this frame
+              }
+
               if (levelManager.checkCollision(rect)) {
                   // Resolve X collision
                   if (velocity.vx > 0) {
