@@ -243,10 +243,10 @@ export class PhysicsSystem {
 
               if (levelManager.checkCollision(rect)) {
                   // Resolve X collision
-                  if (velocity.vx > 0) {
+                  if (velocity.vx > 0 || (velocity.vx === 0 && transform.facing === 'right')) {
                       // hit right wall
                       transform.x = Math.floor((transform.x + collider.offsetX + collider.width) / levelManager.tileSize) * levelManager.tileSize - collider.width - collider.offsetX - 0.1;
-                  } else if (velocity.vx < 0) {
+                  } else {
                       // hit left wall
                       transform.x = Math.floor((transform.x + collider.offsetX) / levelManager.tileSize + 1) * levelManager.tileSize - collider.offsetX + 0.1;
                   }

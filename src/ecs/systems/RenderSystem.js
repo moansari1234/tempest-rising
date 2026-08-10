@@ -176,7 +176,8 @@ export class RenderSystem {
       }
     }
 
-    // DEBUG: Draw Hurtboxes
+    // DEBUG: Draw Hurtboxes (Disabled for production)
+    /*
     const hurtboxes = world.queryEntities([Transform, Hurtbox]);
     ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
     for (const id of hurtboxes) {
@@ -192,6 +193,7 @@ export class RenderSystem {
         const transform = world.getComponent(id, Transform);
         ctx.fillRect(transform.x, transform.y, transform.width, transform.height);
     }
+    */
 
     // UI: Draw Enemy HP Bars and Devour Indicators (In Camera Space)
     const enemyEntities = world.queryEntities([Transform, Health, AI]);

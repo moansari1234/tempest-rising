@@ -2,7 +2,7 @@ import { Palette, SpriteMaps } from './SpriteMaps.js';
 import { AnimationData } from './AnimationData.js';
 
 const RimuruSheetConfig = {
-  url: '/rimuru.png',
+  url: '/public/rimuru.png',
   rows: 10,
   animations: {
     idle: { row: 0, frames: 7 },

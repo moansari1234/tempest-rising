@@ -85,6 +85,7 @@ export class InputManager {
       if (!keysForAction) return;
       for (const key of keysForAction) {
           this.inputTimestamps[key] = 0; // Consume the buffer
+          this.previousKeys[key] = true; // Consume for isActionJustPressed
       }
   }
 }
