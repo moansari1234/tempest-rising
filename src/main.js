@@ -87,12 +87,12 @@ class Game {
     await this.spriteParser.init();
 
     // Create Player using Prefab
-    const playerId = createPlayer(this.world, 100, 100);
+    const playerId = createPlayer(this.world, 80, 420);
 
     // Create a Goblin for chapter1_intro
     const { createGoblin } = await import('./prefabs/GoblinPrefab.js');
-    createGoblin(this.world, 600, 100);
-    createGoblin(this.world, 800, 100);
+    createGoblin(this.world, 450, 420);
+    createGoblin(this.world, 750, 420);
 
     // Tell camera to follow player
     this.camera.setTarget(this.world.getComponent(playerId, Transform));

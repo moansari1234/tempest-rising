@@ -270,13 +270,18 @@ export class PhysicsSystem {
                           levelManager.loadLevel(nextLevel);
                           context.camera.setLevelBounds(levelManager.width * levelManager.tileSize, levelManager.height * levelManager.tileSize);
                           transform.x = 64;
-                          transform.y = 100;
+                          transform.y = 420;
                           context.transitioning = false;
                           context.gameStateManager.setState(GameState.PLAYING);
                           
                           if (nextLevel === 'chapter1_boss') {
                               import('../../prefabs/BossPrefab.js').then(module => {
-                                  module.createTempestSerpent(world, 800, 100);
+                                  module.createTempestSerpent(world, 700, 350);
+                              }).catch(()=>{});
+                          } else if (nextLevel === 'chapter1_mid') {
+                              import('../../prefabs/GoblinPrefab.js').then(module => {
+                                  module.createGoblin(world, 500, 420);
+                                  module.createGoblin(world, 900, 420);
                               }).catch(()=>{});
                           }
                       }, 500);
