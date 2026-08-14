@@ -1,4 +1,4 @@
-import { Transform, Velocity, PlayerInput, Collider, Hitbox, Health } from '../Components.js';
+import { Transform, Velocity, PlayerInput, Collider, Hitbox, Health, Sprite } from '../Components.js';
 import { CONSTANTS } from '../../data/constants.js';
 import { GameState } from '../../core/GameStateManager.js';
 
@@ -12,6 +12,7 @@ export class PhysicsSystem {
       const velocity = world.getComponent(id, Velocity);
       const input = world.getComponent(id, PlayerInput);
       const collider = world.getComponent(id, Collider);
+      const sprite = world.getComponent(id, Sprite);
 
       // Timers
       if (input.dashCooldown > 0) input.dashCooldown -= dt;
@@ -36,11 +37,11 @@ export class PhysicsSystem {
           }
       } else if (input.state === 'attack_light') {
           input.stateTimer -= dt;
-          velocity.vx = 0; // Root motion during attack (can be adjusted)
+          velocity.vx = 0; // Root motion during attack
           if (input.stateTimer <= 0) {
               if (input.comboHit >= 3) {
                   input.state = 'attack_recovery';
-                  input.stateTimer = 0.5; // Finisher recovery
+                  input.stateTimer = 0.3; // Finisher recovery
               } else {
                   input.state = 'idle';
               }
@@ -65,11 +66,21 @@ export class PhysicsSystem {
               
               if (context.audio) context.audio.play('attack_heavy');
               
-              input.state = 'attack_recovery';
-              input.stateTimer = 0.4;
+              input.state = 'attack_heavy_strike';
+              input.stateTimer = 0.35;
               input.chargeTimer = 0;
               input.chargeLevel = 0;
+
+              if (sprite) {
+                  sprite.currentAnimation = 'attack_heavy';
+                  sprite.frameIndex = 2; // Impact slam frame
+                  sprite.frameTimer = 0;
+              }
           }
+      } else if (input.state === 'attack_heavy_strike') {
+          input.stateTimer -= dt;
+          velocity.vx = 0;
+          if (input.stateTimer <= 0) input.state = 'idle';
       } else if (input.state === 'attack_recovery') {
           input.stateTimer -= dt;
           velocity.vx = 0;
@@ -89,7 +100,6 @@ export class PhysicsSystem {
           // Normal movement
           const health = world.getComponent(id, Health);
           if (health && !health.alive) {
-              // Dead! No inputs allowed
               velocity.vx = 0;
           } else {
               let moveDir = 0;
@@ -109,13 +119,23 @@ export class PhysicsSystem {
                   velocity.vx = (transform.facing === 'right' ? 1 : -1) * CONSTANTS.DASH_SPEED;
                   inputManager.consumeAction('dash');
                   if (context.audio) context.audio.play('dash');
+                  if (sprite) {
+                      sprite.currentAnimation = 'run';
+                      sprite.frameIndex = 0;
+                      sprite.frameTimer = 0;
+                  }
               }
               // Parry
               else if (inputManager.isActionJustPressed('parry')) {
                   input.state = 'parry';
                   input.stateTimer = CONSTANTS.PARRY_WINDOW;
                   inputManager.consumeAction('parry');
-                  if (context.audio) context.audio.play('parry'); // Maybe swing sound?
+                  if (context.audio) context.audio.play('parry');
+                  if (sprite) {
+                      sprite.currentAnimation = 'special';
+                      sprite.frameIndex = 0;
+                      sprite.frameTimer = 0;
+                  }
               }
               // Predator Skill
               else if (inputManager.isActionHeld('skillPredator')) {
@@ -130,9 +150,15 @@ export class PhysicsSystem {
                   input.comboResetTimer = comboWindow + 0.5; // Window to hit again
                   
                   input.state = 'attack_light';
-                  input.stateTimer = comboWindow;
+                  input.stateTimer = comboWindow + 0.1;
                   inputManager.consumeAction('attackLight');
                   if (context.audio) context.audio.play('attack_light');
+
+                  if (sprite) {
+                      sprite.currentAnimation = 'attack_light';
+                      sprite.frameIndex = 0;
+                      sprite.frameTimer = 0;
+                  }
 
                   let dmgMult = 1.0;
                   let kb = 200;
@@ -159,6 +185,11 @@ export class PhysicsSystem {
                   input.chargeTimer = 0;
                   input.chargeLevel = 0;
                   inputManager.consumeAction('attackHeavy');
+                  if (sprite) {
+                      sprite.currentAnimation = 'attack_heavy';
+                      sprite.frameIndex = 0;
+                      sprite.frameTimer = 0;
+                  }
               }
           }
 
@@ -169,25 +200,38 @@ export class PhysicsSystem {
                   input.coyoteTimer = 0;
                   inputManager.consumeAction('jump');
                   if (context.audio) context.audio.play('jump');
+                  if (sprite) {
+                      sprite.currentAnimation = 'jump';
+                      sprite.frameIndex = 0;
+                      sprite.frameTimer = 0;
+                  }
               } else if (input.canDoubleJump) {
                   velocity.vy = CONSTANTS.DOUBLE_JUMP_FORCE;
                   input.canDoubleJump = false;
                   inputManager.consumeAction('jump');
                   if (context.audio) context.audio.play('jump');
+                  if (sprite) {
+                      sprite.currentAnimation = 'jump';
+                      sprite.frameIndex = 1;
+                      sprite.frameTimer = 0;
+                  }
               }
           }
 
-          // Update generic states only if we are in a normal movement state
-          if (['idle', 'run', 'jump', 'fall'].includes(input.state)) {
+          // Update generic movement states
+          if (['idle', 'walk', 'run', 'jump', 'fall'].includes(input.state)) {
               if (!collider.onGround) {
                   input.state = velocity.vy < 0 ? 'jump' : 'fall';
-              } else if (Math.abs(velocity.vx) > 0) {
+              } else if (Math.abs(velocity.vx) > 100) {
                   input.state = 'run';
+              } else if (Math.abs(velocity.vx) > 0) {
+                  input.state = 'walk';
               } else {
                   input.state = 'idle';
               }
           }
       }
+    }
     }
 
     // Apply Gravity and integrate Velocity to position

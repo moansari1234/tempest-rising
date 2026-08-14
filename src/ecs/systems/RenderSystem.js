@@ -76,10 +76,10 @@ export class RenderSystem {
           const state = input.state;
           if (state === 'attack_light') {
               targetAnim = 'attack_light';
-          } else if (state === 'attack_heavy') {
-              targetAnim = 'attack_light'; // Use attack_light visual for heavy charge
+          } else if (state === 'attack_heavy' || state === 'attack_heavy_strike') {
+              targetAnim = 'attack_heavy';
           } else if (state === 'attack_recovery') {
-              targetAnim = 'attack_light'; // Show last attack frame during recovery
+              targetAnim = 'attack_light';
           } else if (state === 'predator') {
               targetAnim = 'predator';
           } else if (state === 'hurt') {
@@ -90,14 +90,22 @@ export class RenderSystem {
               targetAnim = 'run';
           } else if (state === 'parry') {
               targetAnim = 'special';
-          } else if (velocity && Math.abs(velocity.vx) > 10) {
+          } else if (state === 'walk') {
+              targetAnim = 'walk';
+          } else if (state === 'run') {
               targetAnim = 'run';
+          } else if (velocity && Math.abs(velocity.vx) > 100) {
+              targetAnim = 'run';
+          } else if (velocity && Math.abs(velocity.vx) > 5) {
+              targetAnim = 'walk';
           } else {
               targetAnim = 'idle';
           }
       } else if (velocity) {
-          if (Math.abs(velocity.vx) > 10) {
+          if (Math.abs(velocity.vx) > 100) {
               targetAnim = 'run';
+          } else if (Math.abs(velocity.vx) > 5) {
+              targetAnim = 'walk';
           } else {
               targetAnim = 'idle';
           }
