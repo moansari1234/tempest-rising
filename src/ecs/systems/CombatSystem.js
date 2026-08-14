@@ -130,7 +130,7 @@ export class CombatSystem {
               const eVelocity = world.getComponent(eId, Velocity);
 
               // Can absorb if it's explicitly absorbable OR if it's dead
-              if (!eCombat.absorbable && eHealth.alive) continue;
+              if (eHealth.devoured || (!eCombat.absorbable && eHealth.alive)) continue;
 
               const eCenter = eTransform.x + eTransform.width / 2;
               const dist = Math.abs(pCenter - eCenter);
@@ -144,12 +144,13 @@ export class CombatSystem {
                   
                   // Absorb if close enough and low HP (or dead)
                   if (dist < ABSORB_RADIUS && (eHealth.hp < eHealth.maxHp * 0.5 || !eHealth.alive)) {
+                      eHealth.devoured = true;
                       console.log('PREDATOR ABSORB!');
                       world.removeEntity(eId); // Completely remove from world
                       
                       if (context.audio) context.audio.play('absorb');
                       if (context.floaterQueue) {
-                          context.floaterQueue.push({ x: eCenter, y: eTransform.y, text: 'DEVOURED!', color: '#00FFFF', lifetime: 1.5, maxLifetime: 1.5 });
+                          context.floaterQueue.push({ x: eCenter, y: eTransform.y, text: 'DEVOURED!', color: '#00FFFF', lifetime: 1.2, maxLifetime: 1.2 });
                       }
                       
                       if (eCombat && context.xpSystem) context.xpSystem.awardXP(eCombat.xpValue, 1.5, context);

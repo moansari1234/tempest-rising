@@ -1,4 +1,4 @@
-import { Transform, Velocity, PlayerInput, Collider, Hitbox, Health, Sprite } from '../Components.js';
+import { Transform, Velocity, PlayerInput, Collider, Hitbox, Health, Sprite, AI, CombatData, Hurtbox } from '../Components.js';
 import { CONSTANTS } from '../../data/constants.js';
 import { GameState } from '../../core/GameStateManager.js';
 
