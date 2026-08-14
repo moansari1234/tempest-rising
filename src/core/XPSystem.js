@@ -46,7 +46,6 @@ export class XPSystem {
     this.sp += CONSTANTS.SP_PER_LEVEL;
     
     if (context && context.floaterQueue) {
-        const { Transform, PlayerInput } = require('../ecs/Components.js');
         const players = context.world ? context.world.queryEntities([Transform, PlayerInput]) : [];
         if (players.length > 0) {
             const transform = context.world.getComponent(players[0], Transform);
@@ -59,7 +58,7 @@ export class XPSystem {
                 maxLifetime: 2.0
             });
             
-            // Apply scaling instantly
+            // Apply stat scaling instantly
             const health = context.world.getComponent(players[0], Health);
             const combat = context.world.getComponent(players[0], CombatData);
             if (health && combat) {
