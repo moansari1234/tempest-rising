@@ -185,23 +185,34 @@ export class RenderSystem {
               displayW = 96; // 3x scale of 32x32 boss sprite
               displayH = 96;
           } else if (bitmap.width >= 64) {
-              displayW = bitmap.width * 0.5; // 64x64 for high-res Rimuru sheet
+              displayW = bitmap.width * 0.5; // High-res sheet fallback
               displayH = bitmap.height * 0.5;
           } else {
-              displayW = bitmap.width * 2; // 32x32 for standard 16x16 pixel art
+              displayW = bitmap.width * 2; // 2x scale for pixel art
               displayH = bitmap.height * 2;
           }
           
-          // Center horizontally on the entity, bottom-align vertically
-          const drawX = transform.x + transform.width / 2 - displayW / 2;
           const drawY = transform.y + transform.height - displayH;
           
-          if (transform.facing === 'left') {
-              ctx.translate(drawX + displayW, drawY);
-              ctx.scale(-1, 1);
-              ctx.drawImage(bitmap, 0, 0, displayW, displayH);
+          if (sprite.spriteKey === 'rimuru' && bitmap.width > 16) {
+              // Wide attack slash sprite: anchor slime body at transform.x
+              if (transform.facing === 'left') {
+                  ctx.translate(transform.x + transform.width, drawY);
+                  ctx.scale(-1, 1);
+                  ctx.drawImage(bitmap, 0, 0, displayW, displayH);
+              } else {
+                  ctx.drawImage(bitmap, transform.x, drawY, displayW, displayH);
+              }
           } else {
-              ctx.drawImage(bitmap, drawX, drawY, displayW, displayH);
+              // Standard centered sprite
+              const drawX = transform.x + transform.width / 2 - displayW / 2;
+              if (transform.facing === 'left') {
+                  ctx.translate(drawX + displayW, drawY);
+                  ctx.scale(-1, 1);
+                  ctx.drawImage(bitmap, 0, 0, displayW, displayH);
+              } else {
+                  ctx.drawImage(bitmap, drawX, drawY, displayW, displayH);
+              }
           }
           
           if (sprite.color) {

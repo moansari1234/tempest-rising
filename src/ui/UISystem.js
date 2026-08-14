@@ -197,16 +197,17 @@ export class UISystem {
     
     renderFloaters(ctx, dt, context) {
         if (!context.floaterQueue) context.floaterQueue = [];
+        const frameDt = context._frameDt || (1 / 60);
         
         ctx.save();
         context.camera.apply(ctx);
         
         for (let i = context.floaterQueue.length - 1; i >= 0; i--) {
             let f = context.floaterQueue[i];
-            f.lifetime -= dt;
-            f.y -= 40 * dt;
-            ctx.globalAlpha = Math.max(0, f.lifetime / f.maxLifetime);
-            ctx.font = 'bold 14px monospace';
+            f.lifetime -= frameDt;
+            f.y -= 35 * frameDt;
+            ctx.globalAlpha = Math.max(0, Math.min(1, f.lifetime / (f.maxLifetime || 1.0)));
+            ctx.font = 'bold 13px monospace';
             ctx.fillStyle = f.color;
             ctx.textAlign = 'center';
             ctx.fillText(f.text, f.x, f.y);
