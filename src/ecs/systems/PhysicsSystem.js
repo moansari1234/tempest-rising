@@ -38,13 +38,54 @@ export class PhysicsSystem {
       } else if (input.state === 'attack_light') {
           input.stateTimer -= dt;
           velocity.vx = 0; // Root motion during attack
-          if (input.stateTimer <= 0) {
-              if (input.comboHit >= 3) {
-                  input.state = 'attack_recovery';
-                  input.stateTimer = 0.3; // Finisher recovery
-              } else {
-                  input.state = 'idle';
+          
+          // Dash Cancel
+          if (inputManager.isActionJustPressed('dash') && input.dashCooldown <= 0) {
+              input.state = 'dash';
+              input.stateTimer = CONSTANTS.DASH_DURATION;
+              input.dashCooldown = CONSTANTS.DASH_COOLDOWN;
+              velocity.vx = (transform.facing === 'right' ? 1 : -1) * CONSTANTS.DASH_SPEED;
+              inputManager.consumeAction('dash');
+              if (context.audio) context.audio.play('dash');
+              if (sprite) {
+                  sprite.currentAnimation = 'run';
+                  sprite.frameIndex = 0;
+                  sprite.frameTimer = 0;
               }
+          } 
+          // Instant Combo Chaining (Press Z during swing to chain into next hit)
+          else if (inputManager.isActionJustPressed('attackLight') && input.stateTimer <= 0.16) {
+              input.comboHit = (input.comboHit || 0) + 1;
+              if (input.comboHit > 3) input.comboHit = 1;
+              input.comboResetTimer = 0.9;
+              input.state = 'attack_light';
+              input.stateTimer = 0.22; // Snappy 220ms swing
+              inputManager.consumeAction('attackLight');
+              if (context.audio) context.audio.play('attack_light');
+
+              if (sprite) {
+                  sprite.currentAnimation = 'attack_light';
+                  sprite.frameIndex = 0;
+                  sprite.frameTimer = 0;
+              }
+
+              let dmgMult = input.comboHit === 3 ? 1.8 : input.comboHit === 2 ? 1.2 : 1.0;
+              let kb = input.comboHit === 3 ? 400 : 200;
+              let hbW = input.comboHit === 3 ? 56 : 44, hbH = input.comboHit === 3 ? 56 : 44;
+              let hitstop = input.comboHit === 3 ? CONSTANTS.HITSTOP_CRITICAL : CONSTANTS.HITSTOP_LIGHT;
+
+              // Spawn Hitbox
+              const hitboxId = world.createEntity();
+              const hbX = transform.facing === 'right' ? transform.x + transform.width : transform.x - hbW;
+              world.addComponent(hitboxId, new Transform(hbX, transform.y + transform.height - hbH, hbW, hbH));
+              
+              const hitbox = new Hitbox(id, 10 * dmgMult, kb, 0.1, hitstop, 'light');
+              hitbox.properties = { comboStage: input.comboHit };
+              if (input.comboHit === 2) hitbox.properties.launcher = 'up';
+              if (input.comboHit === 3) hitbox.properties.launcher = 'heavy';
+              world.addComponent(hitboxId, hitbox);
+          } else if (input.stateTimer <= 0) {
+              input.state = 'idle';
           }
       } else if (input.state === 'attack_heavy') {
           input.chargeTimer = (input.chargeTimer || 0) + dt;
@@ -67,7 +108,7 @@ export class PhysicsSystem {
               if (context.audio) context.audio.play('attack_heavy');
               
               input.state = 'attack_heavy_strike';
-              input.stateTimer = 0.35;
+              input.stateTimer = 0.25;
               input.chargeTimer = 0;
               input.chargeLevel = 0;
 
@@ -144,13 +185,12 @@ export class PhysicsSystem {
               }
               // Attack Light
               else if (inputManager.isActionJustPressed('attackLight')) {
-                  const comboWindow = CONSTANTS.LIGHT_COMBO_TIMING ? CONSTANTS.LIGHT_COMBO_TIMING[input.comboHit || 0] : 0.3;
                   input.comboHit = (input.comboHit || 0) + 1;
                   if (input.comboHit > 3) input.comboHit = 1;
-                  input.comboResetTimer = comboWindow + 0.5; // Window to hit again
+                  input.comboResetTimer = 0.9;
                   
                   input.state = 'attack_light';
-                  input.stateTimer = comboWindow + 0.1;
+                  input.stateTimer = 0.22; // Snappy 220ms swing
                   inputManager.consumeAction('attackLight');
                   if (context.audio) context.audio.play('attack_light');
 
@@ -160,13 +200,10 @@ export class PhysicsSystem {
                       sprite.frameTimer = 0;
                   }
 
-                  let dmgMult = 1.0;
-                  let kb = 200;
-                  let hbW = 40, hbH = 40;
-                  let hitstop = CONSTANTS.HITSTOP_LIGHT;
-                  
-                  if (input.comboHit === 2) { dmgMult = 1.2; kb = 200; hbH = 48; }
-                  if (input.comboHit === 3) { dmgMult = 1.8; kb = 400; hbW = 52; hbH = 52; hitstop = CONSTANTS.HITSTOP_CRITICAL; }
+                  let dmgMult = input.comboHit === 3 ? 1.8 : input.comboHit === 2 ? 1.2 : 1.0;
+                  let kb = input.comboHit === 3 ? 400 : 200;
+                  let hbW = input.comboHit === 3 ? 56 : 44, hbH = input.comboHit === 3 ? 56 : 44;
+                  let hitstop = input.comboHit === 3 ? CONSTANTS.HITSTOP_CRITICAL : CONSTANTS.HITSTOP_LIGHT;
 
                   // Spawn Hitbox
                   const hitboxId = world.createEntity();
