@@ -232,7 +232,6 @@ export class PhysicsSystem {
           }
       }
     }
-    }
 
     // Apply Gravity and integrate Velocity to position
     const physicalEntities = world.queryEntities([Transform, Velocity]);
