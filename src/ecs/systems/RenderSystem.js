@@ -35,6 +35,9 @@ export class RenderSystem {
         camera.setZoom(bossAlive ? CONSTANTS.CAMERA_BOSS_ZOOM : 1.0);
     }
 
+    // Ensure pixelated crisp rendering
+    ctx.imageSmoothingEnabled = false;
+
     // Apply camera
     camera.apply(ctx);
 
@@ -168,12 +171,18 @@ export class RenderSystem {
               ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;
           }
           
-          // Draw at sprite's natural size, centered on the entity's position.
-          // For the 128x128 sheet frames, use a display scale.
-          // For the 16x16 pixel-art sprites, use 2x scale.
-          const isLargeSprite = bitmap.width >= 64; // sheet frames are 128px
-          const displayW = isLargeSprite ? bitmap.width * 0.5 : bitmap.width * 2;
-          const displayH = isLargeSprite ? bitmap.height * 0.5 : bitmap.height * 2;
+          // Calculate integer-scaled display dimensions
+          let displayW, displayH;
+          if (sprite.spriteKey === 'serpent') {
+              displayW = 96; // 3x scale of 32x32 boss sprite
+              displayH = 96;
+          } else if (bitmap.width >= 64) {
+              displayW = bitmap.width * 0.5; // 64x64 for high-res Rimuru sheet
+              displayH = bitmap.height * 0.5;
+          } else {
+              displayW = bitmap.width * 2; // 32x32 for standard 16x16 pixel art
+              displayH = bitmap.height * 2;
+          }
           
           // Center horizontally on the entity, bottom-align vertically
           const drawX = transform.x + transform.width / 2 - displayW / 2;
