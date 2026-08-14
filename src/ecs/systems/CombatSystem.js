@@ -179,6 +179,20 @@ export class CombatSystem {
           }
       }
     }
+
+    // 5. Dead Entity Corpse Decay & Cleanup
+    for (const eId of enemies) {
+      const eHealth = world.getComponent(eId, Health);
+      if (eHealth && !eHealth.alive) {
+        if (eHealth.decayTimer === undefined) {
+          eHealth.decayTimer = 3.5; // 3.5 seconds to devour before dissolving
+        }
+        eHealth.decayTimer -= dt;
+        if (eHealth.decayTimer <= 0) {
+          world.removeEntity(eId);
+        }
+      }
+    }
   }
 
   checkCollision(a, b) {

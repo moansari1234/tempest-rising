@@ -124,25 +124,50 @@ export class RenderSystem {
           sprite.frameTimer = 0;
       }
 
-      // Vacuum VFX
+      // Devour Vacuum VFX
       if (input && input.state === 'predator') {
           ctx.save();
-          ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          
           const centerX = transform.x + transform.width / 2;
           const centerY = transform.y + transform.height / 2;
+          const now = performance.now();
           
-          for (let i = 0; i < 8; i++) {
-              const angle = (Math.PI * 2 / 8) * i + (performance.now() / 200);
-              const distOut = 150 - ((performance.now() / 5) % 150);
-              const distIn = Math.max(0, distOut - 20);
-              
-              ctx.moveTo(centerX + Math.cos(angle) * distOut, centerY + Math.sin(angle) * distOut);
-              ctx.lineTo(centerX + Math.cos(angle) * distIn, centerY + Math.sin(angle) * distIn);
+          // Concentric swirling suction vortex rings
+          for (let ring = 0; ring < 3; ring++) {
+              const radius = 25 + ring * 35 - ((now / 10) % 35);
+              if (radius > 10) {
+                  ctx.strokeStyle = ring === 0 ? 'rgba(165, 243, 252, 0.7)' : 'rgba(56, 189, 248, 0.4)';
+                  ctx.lineWidth = 2;
+                  ctx.beginPath();
+                  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                  ctx.stroke();
+              }
+          }
+          
+          // Inward swirling hydro spirals
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+              const baseAngle = (Math.PI * 2 / 6) * i + (now / 180);
+              for (let step = 0; step < 12; step++) {
+                  const dist = 140 - step * 10 - ((now / 4) % 10);
+                  if (dist > 5) {
+                      const angle = baseAngle + step * 0.25;
+                      const px = centerX + Math.cos(angle) * dist;
+                      const py = centerY + Math.sin(angle) * (dist * 0.6); // slight vertical perspective
+                      if (step === 0) ctx.moveTo(px, py);
+                      else ctx.lineTo(px, py);
+                  }
+              }
           }
           ctx.stroke();
+          
+          // Glowing core pulse
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 16 + Math.sin(now / 100) * 4, 0, Math.PI * 2);
+          ctx.fill();
+          
           ctx.restore();
       }
 
@@ -177,6 +202,11 @@ export class RenderSystem {
           // I-frame flash effect
           if (health && health.iFrameTimer > 0) {
               ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;
+          }
+
+          // Corpse dissolving fade out
+          if (health && !health.alive && health.decayTimer !== undefined && health.decayTimer < 1.0) {
+              ctx.globalAlpha *= Math.max(0, health.decayTimer);
           }
           
           // Calculate integer-scaled display dimensions
@@ -241,18 +271,40 @@ export class RenderSystem {
       }
     }
 
-    // UI: Draw Enemy HP Bars and Devour Indicators (In Camera Space)
+    // UI: Draw Enemy HP Bars and Proximity-Based Devour Badges
+    const players = world.queryEntities([Transform, PlayerInput, Health]);
+    const playerTransform = players.length > 0 ? world.getComponent(players[0], Transform) : null;
+    const playerHealth = players.length > 0 ? world.getComponent(players[0], Health) : null;
+
     const enemyEntities = world.queryEntities([Transform, Health, AI]);
     for (const id of enemyEntities) {
         const transform = world.getComponent(id, Transform);
         const health = world.getComponent(id, Health);
         
+        // Check proximity to player
+        const isNearPlayer = playerTransform && playerHealth && playerHealth.alive && 
+            Math.abs(playerTransform.x - transform.x) < 140 && Math.abs(playerTransform.y - transform.y) < 80;
+
         if (!health.alive && health.hp === 0) {
-            ctx.fillStyle = '#facc15';
-            ctx.font = 'bold 12px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('[E] DEVOUR', transform.x + transform.width / 2, transform.y - 10);
-            ctx.textAlign = 'left';
+            // Only show [E] DEVOUR when player is nearby
+            if (isNearPlayer) {
+                const pulse = Math.sin(performance.now() / 150) * 0.3 + 0.7;
+                const badgeX = transform.x + transform.width / 2;
+                const badgeY = transform.y - 14;
+                
+                ctx.save();
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fillRect(badgeX - 36, badgeY - 11, 72, 16);
+                ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(badgeX - 36, badgeY - 11, 72, 16);
+                
+                ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
+                ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('[E] DEVOUR', badgeX, badgeY + 1);
+                ctx.restore();
+            }
             continue;
         }
 
@@ -268,12 +320,11 @@ export class RenderSystem {
             ctx.fillStyle = '#ef4444';
             ctx.fillRect(barX, barY, barWidth * (health.hp / health.maxHp), barHeight);
 
-            if (health.hp < health.maxHp * 0.5) {
+            if (health.hp < health.maxHp * 0.5 && isNearPlayer) {
                 ctx.fillStyle = '#facc15';
                 ctx.font = 'bold 10px monospace';
                 ctx.textAlign = 'center';
                 ctx.fillText('[E]', transform.x + transform.width / 2, transform.y - 15);
-                ctx.textAlign = 'left';
             }
         }
     }
