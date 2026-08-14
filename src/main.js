@@ -89,10 +89,11 @@ class Game {
     // Create Player using Prefab
     const playerId = createPlayer(this.world, 80, 420);
 
-    // Create a Goblin for chapter1_intro
-    const { createGoblin } = await import('./prefabs/GoblinPrefab.js');
-    createGoblin(this.world, 450, 420);
-    createGoblin(this.world, 750, 420);
+    // Load intelligent procedural stage 1
+    const playerStats = { level: 1, atk: 10, def: 8, maxHp: 100 };
+    this.levelManager.loadLevel('stage_1', playerStats);
+    this.camera.setLevelBounds(this.levelManager.width * this.levelManager.tileSize, this.levelManager.height * this.levelManager.tileSize);
+    this.levelManager.spawnLevelEntities(this.world);
 
     // Tell camera to follow player
     this.camera.setTarget(this.world.getComponent(playerId, Transform));

@@ -107,6 +107,16 @@ export class UISystem {
             ctx.lineWidth = 1;
             ctx.strokeRect(20, 60, 120, 8);
         }
+
+        // Stage & Floor Banner
+        if (context.levelManager && context.levelManager.stageName) {
+            ctx.save();
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 13px monospace';
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(context.levelManager.stageName, canvas.width - 20, 32);
+            ctx.restore();
+        }
         
         // Combo HUD
         const players = world.queryEntities([PlayerInput]);

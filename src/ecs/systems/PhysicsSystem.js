@@ -267,23 +267,31 @@ export class PhysicsSystem {
                   if (!context.transitioning) {
                       context.transitioning = true;
                       setTimeout(() => {
-                          levelManager.loadLevel(nextLevel);
+                          // Remove all previous enemy entities
+                          const oldEnemies = world.queryEntities([Transform, Health, AI]);
+                          for (const eId of oldEnemies) {
+                              world.removeEntity(eId);
+                          }
+
+                          // Query player stats for dynamic scaling
+                          const pHealth = world.getComponent(id, Health);
+                          const playerStats = {
+                              level: context.xpSystem ? context.xpSystem.level : 1,
+                              atk: 10 + (context.xpSystem ? (context.xpSystem.level - 1) * 3 : 0),
+                              def: 8 + (context.xpSystem ? (context.xpSystem.level - 1) * 2 : 0),
+                              maxHp: pHealth ? pHealth.maxHp : 100
+                          };
+
+                          levelManager.loadLevel(nextLevel, playerStats);
                           context.camera.setLevelBounds(levelManager.width * levelManager.tileSize, levelManager.height * levelManager.tileSize);
-                          transform.x = 64;
+                          levelManager.spawnLevelEntities(world);
+
+                          transform.x = 80;
                           transform.y = 420;
+                          velocity.vx = 0;
+                          velocity.vy = 0;
                           context.transitioning = false;
                           context.gameStateManager.setState(GameState.PLAYING);
-                          
-                          if (nextLevel === 'chapter1_boss') {
-                              import('../../prefabs/BossPrefab.js').then(module => {
-                                  module.createTempestSerpent(world, 700, 350);
-                              }).catch(()=>{});
-                          } else if (nextLevel === 'chapter1_mid') {
-                              import('../../prefabs/GoblinPrefab.js').then(module => {
-                                  module.createGoblin(world, 500, 420);
-                                  module.createGoblin(world, 900, 420);
-                              }).catch(()=>{});
-                          }
                       }, 500);
                   }
                   continue; // Skip further physics updates for player this frame

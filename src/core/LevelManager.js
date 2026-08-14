@@ -1,5 +1,7 @@
 import { CONSTANTS } from '../data/constants.js';
 import { Levels } from '../data/levels.js';
+import { LevelDesigner } from '../level_gen/LevelDesigner.js';
+import { createGoblin, createGoblinBrawler } from '../prefabs/GoblinPrefab.js';
 
 export class LevelManager {
   constructor() {
@@ -8,21 +10,51 @@ export class LevelManager {
     this.currentLevel = null;
     this.width = 0;
     this.height = 0;
-    this.tileSize = CONSTANTS.TILE_SIZE * 2; // e.g. 16 * 2 = 32px scaled visually
+    this.tileSize = CONSTANTS.TILE_SIZE * 2; // 32px
+    this.currentStageIndex = 1;
+    this.stageName = 'Floor 1-1: Whispering Caverns';
+    this.designer = new LevelDesigner();
   }
 
-  loadLevel(levelKey) {
-    const levelData = Levels[levelKey];
-    if (!levelData) {
-        console.error("Level not found:", levelKey);
-        return;
+  loadLevel(levelKey, playerStats = { level: 1, atk: 10, def: 8, maxHp: 100 }) {
+    let levelData = null;
+
+    if (typeof levelKey === 'string' && levelKey.startsWith('stage_')) {
+      const idx = parseInt(levelKey.replace('stage_', ''), 10) || 1;
+      this.currentStageIndex = idx;
+      levelData = this.designer.generateStage(idx, playerStats);
+    } else if (Levels[levelKey]) {
+      levelData = Levels[levelKey];
+    } else {
+      // Default to procedural level generation
+      levelData = this.designer.generateStage(this.currentStageIndex, playerStats);
     }
+
     this.currentLevelKey = levelKey;
     this.currentLevelData = levelData;
     this.currentLevel = levelData.layout;
     this.width = levelData.width;
     this.height = levelData.height;
-    console.log(`[LevelManager] Loaded level: ${levelKey} (${this.width}x${this.height})`);
+    this.stageName = levelData.name || `Floor 1-${this.currentStageIndex}`;
+
+    console.log(`[LevelManager] Loaded level: ${this.stageName} (${this.width}x${this.height})`);
+    return levelData;
+  }
+
+  spawnLevelEntities(world) {
+    if (!this.currentLevelData || !this.currentLevelData.spawns) return;
+
+    for (const spawn of this.currentLevelData.spawns) {
+      if (spawn.type === 'goblin') {
+        createGoblin(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'goblin_brawler') {
+        createGoblinBrawler(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'boss_serpent') {
+        import('../prefabs/BossPrefab.js').then(module => {
+          module.createTempestSerpent(world, spawn.x, spawn.y);
+        }).catch(() => {});
+      }
+    }
   }
 
   getTileAtPixel(x, y) {
@@ -43,25 +75,21 @@ export class LevelManager {
     return tile === '#';
   }
 
-  // AABB vs Tilemap collision
   checkCollision(rect) {
-    // Check the 4 corners of the rect
-    // + a few points along the edges to prevent tunneling if rect > tileSize
     const points = [
-      { x: rect.x, y: rect.y }, // Top-Left
-      { x: rect.x + rect.w - 1, y: rect.y }, // Top-Right
-      { x: rect.x, y: rect.y + rect.h - 1 }, // Bottom-Left
-      { x: rect.x + rect.w - 1, y: rect.y + rect.h - 1 }, // Bottom-Right
-      // Center points along edges for safety (since sprite is 32 and tile is 32, just corners might suffice, but middle helps)
-      { x: rect.x + rect.w / 2, y: rect.y }, // Top-Center
-      { x: rect.x + rect.w / 2, y: rect.y + rect.h - 1 }, // Bottom-Center
-      { x: rect.x, y: rect.y + rect.h / 2 }, // Left-Center
-      { x: rect.x + rect.w - 1, y: rect.y + rect.h / 2 } // Right-Center
+      { x: rect.x, y: rect.y },
+      { x: rect.x + rect.w - 1, y: rect.y },
+      { x: rect.x, y: rect.y + rect.h - 1 },
+      { x: rect.x + rect.w - 1, y: rect.y + rect.h - 1 },
+      { x: rect.x + rect.w / 2, y: rect.y },
+      { x: rect.x + rect.w / 2, y: rect.y + rect.h - 1 },
+      { x: rect.x, y: rect.y + rect.h / 2 },
+      { x: rect.x + rect.w - 1, y: rect.y + rect.h / 2 }
     ];
 
-    for (let p of points) {
+    for (const p of points) {
       if (this.isSolid(p.x, p.y)) {
-        return true; // Collision detected
+        return true;
       }
     }
     return false;
@@ -93,12 +121,22 @@ export class LevelManager {
         const tile = this.currentLevel[r][c];
         if (tile === '#') {
           ctx.drawImage(
-            tileBitmap, 
-            c * this.tileSize, 
-            r * this.tileSize, 
-            this.tileSize, 
+            tileBitmap,
+            c * this.tileSize,
+            r * this.tileSize,
+            this.tileSize,
             this.tileSize
           );
+        } else if (tile === '>' || tile === '<') {
+          // Render glowing portal exit gateway
+          ctx.save();
+          const pulse = Math.sin(performance.now() / 150) * 0.3 + 0.7;
+          ctx.fillStyle = `rgba(56, 189, 248, ${0.4 * pulse})`;
+          ctx.fillRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          ctx.strokeStyle = `rgba(165, 243, 252, ${pulse})`;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          ctx.restore();
         }
       }
     }
