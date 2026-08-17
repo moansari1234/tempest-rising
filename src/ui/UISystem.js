@@ -964,6 +964,40 @@ export class UISystem {
         let curOffY = activeOffset.offsetY || 0;
         let curScale = activeOffset.scale !== undefined ? activeOffset.scale : 1.0;
 
+        // Keyboard Arrow Keys & Hotkey Nudging for Fast In-App Editing
+        const isShiftHeld = inputManager.keys['Shift'];
+        const step = isShiftHeld ? 5 : 1;
+
+        if (inputManager.keys['ArrowLeft'] && !inputManager.previousKeys['ArrowLeft']) {
+            if (isCurrentFrameLocked) spriteParser.setFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, false);
+            this.assetIsPaused = true;
+            curOffX -= step;
+            spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+        }
+        if (inputManager.keys['ArrowRight'] && !inputManager.previousKeys['ArrowRight']) {
+            if (isCurrentFrameLocked) spriteParser.setFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, false);
+            this.assetIsPaused = true;
+            curOffX += step;
+            spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+        }
+        if (inputManager.keys['ArrowUp'] && !inputManager.previousKeys['ArrowUp']) {
+            if (isCurrentFrameLocked) spriteParser.setFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, false);
+            this.assetIsPaused = true;
+            curOffY -= step;
+            spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+        }
+        if (inputManager.keys['ArrowDown'] && !inputManager.previousKeys['ArrowDown']) {
+            if (isCurrentFrameLocked) spriteParser.setFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, false);
+            this.assetIsPaused = true;
+            curOffY += step;
+            spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+        }
+        if ((inputManager.keys['l'] || inputManager.keys['L']) && (!inputManager.previousKeys['l'] && !inputManager.previousKeys['L'])) {
+            const newLock = spriteParser.toggleFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx);
+            this.toastMsg = newLock ? `🔒 Frame #${this.assetFrameIdx} Locked` : `🔓 Frame #${this.assetFrameIdx} Unlocked`;
+            this.toastTimer = 2.0;
+        }
+
         // Viewport Dragging to Reposition Sprite (Fluid 1:1 Absolute Mouse Tracking)
         if (inputManager.mouseClicked) {
             if (!this.isDraggingSprite) {
@@ -1027,16 +1061,16 @@ export class UISystem {
             ctx.lineWidth = 1;
             ctx.setLineDash([3, 3]);
             ctx.beginPath();
-            ctx.moveTo(centerX, studioY + 10);
+            ctx.moveTo(centerX, studioY + 32);
             ctx.lineTo(centerX, studioY + studioH - 10);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Center Tag
+            // Center Tag (Drawn near ground so it never collides with frame scrubber pills)
             ctx.fillStyle = '#eab308';
             ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('ORIGIN [X=0]', centerX, studioY + 20);
+            ctx.fillText('ORIGIN [X=0]', centerX, groundLineY - 12);
         }
 
         // In-World Tile Reference Box (32x32)
@@ -1603,8 +1637,12 @@ export class UISystem {
 
             ctrlY += 24;
 
-            // --- 7. EXPORT / COPY JSON BUTTON ---
-            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 24)) {
+            // --- 7. EXPORT / COPY JSON & DOWNLOAD FILE BUTTONS ---
+            const expBtnW = (rightW - 26) / 2;
+            const expBtnH = 24;
+
+            // Button 1: Copy to Clipboard
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, expBtnW, expBtnH)) {
                 try {
                     const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
                     navigator.clipboard.writeText(jsonStr);
@@ -1616,15 +1654,41 @@ export class UISystem {
                 }
             }
 
-            ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
-            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 24);
+            // Button 2: Download .json File
+            if (inputManager.isClickInRect(rightX + 10 + expBtnW + 6, ctrlY, expBtnW, expBtnH)) {
+                try {
+                    const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
+                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'tempest_sprite_offsets.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    this.toastMsg = '💾 Downloaded tempest_sprite_offsets.json!';
+                    this.toastTimer = 3.0;
+                } catch(e) {}
+            }
+
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.22)';
+            ctx.fillRect(rightX + 10, ctrlY, expBtnW, expBtnH);
             ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 24);
+            ctx.lineWidth = 1;
+            ctx.strokeRect(rightX + 10, ctrlY, expBtnW, expBtnH);
             ctx.fillStyle = '#22c55e';
-            ctx.font = 'bold 9px monospace';
+            ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('📋 EXPORT / COPY JSON', rightX + rightW / 2, ctrlY + 16);
+            ctx.fillText('📋 COPY JSON', rightX + 10 + expBtnW / 2, ctrlY + 16);
+
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+            ctx.fillRect(rightX + 10 + expBtnW + 6, ctrlY, expBtnW, expBtnH);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(rightX + 10 + expBtnW + 6, ctrlY, expBtnW, expBtnH);
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('💾 SAVE FILE', rightX + 10 + expBtnW + 6 + expBtnW / 2, ctrlY + 16);
 
         } else {
             // === STATS & DOSSIER PANEL ===
