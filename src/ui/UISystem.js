@@ -14,6 +14,7 @@ export class UISystem {
         this.assetFrameTimer = 0;
         this.assetIsPaused = false;
         this.assetZoom = 1; // Strict 1x default zoom
+        this.assetAnimSpeed = 1.0; // Playback speed multiplier (0.25x to 2.0x)
         this.assetFacing = 'right';
         
         // Alignment Editor State
@@ -801,10 +802,10 @@ export class UISystem {
             return;
         }
 
-        // Animation Time Progression
+        // Animation Time Progression (Scaled by assetAnimSpeed)
         const frameDt = dt || 0.016;
         if (!this.assetIsPaused && entityAnimData) {
-            this.assetFrameTimer += frameDt;
+            this.assetFrameTimer += frameDt * (this.assetAnimSpeed || 1.0);
             if (this.assetFrameTimer >= (entityAnimData.frameTime || 0.15)) {
                 this.assetFrameTimer = 0;
                 this.assetFrameIdx = (this.assetFrameIdx + 1) % totalFrames;
@@ -992,9 +993,12 @@ export class UISystem {
             curOffY += step;
             spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
         }
-        if ((inputManager.keys['l'] || inputManager.keys['L']) && (!inputManager.previousKeys['l'] && !inputManager.previousKeys['L'])) {
-            const newLock = spriteParser.toggleFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx);
-            this.toastMsg = newLock ? `🔒 Frame #${this.assetFrameIdx} Locked` : `🔓 Frame #${this.assetFrameIdx} Unlocked`;
+        if ((inputManager.keys['t'] || inputManager.keys['T']) && (!inputManager.previousKeys['t'] && !inputManager.previousKeys['T'])) {
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+            const curIdx = speeds.indexOf(this.assetAnimSpeed);
+            const nextIdx = (curIdx + 1) % speeds.length;
+            this.assetAnimSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
+            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x`;
             this.toastTimer = 2.0;
         }
 
@@ -1166,68 +1170,86 @@ export class UISystem {
         const lockTag = isCurrentFrameLocked ? '🔒 [LOCKED & SAVED]' : '✏️ [UNLOCKED]';
         ctx.fillText(`${lockTag} SCOPE: [${scopeLabel}] | X: ${offXSign}${Math.round(curOffX)}px, Y: ${offYSign}${Math.round(curOffY)}px | SCALE: ${curScale.toFixed(2)}x`, studioX + studioW / 2, groundLineY + 20);
 
-        // Studio Playback State Badge (Top-Left)
-        if (inputManager.isClickInRect(studioX + 10, studioY + 10, 85, 20)) {
+        // --- TOP PLAYBACK & TOOLBAR STRIP ---
+        // 1. Play/Pause Button
+        if (inputManager.isClickInRect(studioX + 8, studioY + 8, 62, 22)) {
             this.assetIsPaused = !this.assetIsPaused;
         }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + 10, studioY + 10, 85, 20);
+        ctx.fillRect(studioX + 8, studioY + 8, 62, 22);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + 10, studioY + 10, 85, 20);
+        ctx.strokeRect(studioX + 8, studioY + 8, 62, 22);
         ctx.fillStyle = this.assetIsPaused ? '#f59e0b' : '#10b981';
         ctx.font = 'bold 8px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED' : '▶ PLAYING', studioX + 52, studioY + 23);
+        ctx.fillText(this.assetIsPaused ? '⏸ PAUSE' : '▶ PLAY', studioX + 39, studioY + 22);
 
-        // Zoom Badge (Top-Right)
-        if (inputManager.isClickInRect(studioX + studioW - 75, studioY + 10, 65, 20)) {
+        // 2. Playback Speed Button [⏱️ 1.0x] (Click to Cycle 0.25x -> 0.5x -> 0.75x -> 1.0x -> 1.5x -> 2.0x)
+        if (inputManager.isClickInRect(studioX + 74, studioY + 8, 54, 22)) {
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+            const curIdx = speeds.indexOf(this.assetAnimSpeed);
+            const nextIdx = (curIdx + 1) % speeds.length;
+            this.assetAnimSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
+            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x`;
+            this.toastTimer = 2.0;
+        }
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(studioX + 74, studioY + 8, 54, 22);
+        ctx.strokeStyle = this.assetAnimSpeed !== 1.0 ? '#a855f7' : '#475569';
+        ctx.strokeRect(studioX + 74, studioY + 8, 54, 22);
+        ctx.fillStyle = this.assetAnimSpeed !== 1.0 ? '#c084fc' : '#38bdf8';
+        ctx.font = 'bold 8px monospace';
+        ctx.fillText(`⏱️ ${this.assetAnimSpeed}x`, studioX + 101, studioY + 22);
+
+        // 3. Zoom Button (Top-Right)
+        if (inputManager.isClickInRect(studioX + studioW - 56, studioY + 8, 48, 22)) {
             this.assetZoom = this.assetZoom >= 4 ? 1 : this.assetZoom + 1;
         }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + studioW - 75, studioY + 10, 65, 20);
+        ctx.fillRect(studioX + studioW - 56, studioY + 8, 48, 22);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + studioW - 75, studioY + 10, 65, 20);
+        ctx.strokeRect(studioX + studioW - 56, studioY + 8, 48, 22);
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 8px monospace';
-        ctx.fillText(`ZOOM: ${this.assetZoom}x`, studioX + studioW - 42, studioY + 23);
+        ctx.fillText(`🔍 ${this.assetZoom}x`, studioX + studioW - 32, studioY + 22);
 
-        // --- INTERACTIVE FRAME STRIP SCRUBBER (Top-Center) ---
-        const scrubberStartX = studioX + 102;
-        const scrubberW = studioW - 184;
-        const scrubberY = studioY + 10;
-        const scrubberH = 20;
+        // --- INTERACTIVE FRAME STRIP SCRUBBER (Center) ---
+        const scrubberStartX = studioX + 132;
+        const scrubberW = studioW - 192;
+        const scrubberY = studioY + 8;
+        const scrubberH = 22;
 
         // Step Back Button [◀]
-        if (inputManager.isClickInRect(scrubberStartX, scrubberY, 20, scrubberH)) {
+        if (inputManager.isClickInRect(scrubberStartX, scrubberY, 18, scrubberH)) {
             this.assetIsPaused = true;
             this.assetFrameIdx = (this.assetFrameIdx - 1 + totalFrames) % totalFrames;
         }
         ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-        ctx.fillRect(scrubberStartX, scrubberY, 20, scrubberH);
+        ctx.fillRect(scrubberStartX, scrubberY, 18, scrubberH);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(scrubberStartX, scrubberY, 20, scrubberH);
+        ctx.strokeRect(scrubberStartX, scrubberY, 18, scrubberH);
         ctx.fillStyle = '#e2e8f0';
         ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('◀', scrubberStartX + 10, scrubberY + 14);
+        ctx.fillText('◀', scrubberStartX + 9, scrubberY + 14);
 
         // Step Forward Button [▶]
-        const nextBtnX = scrubberStartX + scrubberW - 20;
-        if (inputManager.isClickInRect(nextBtnX, scrubberY, 20, scrubberH)) {
+        const nextBtnX = scrubberStartX + scrubberW - 18;
+        if (inputManager.isClickInRect(nextBtnX, scrubberY, 18, scrubberH)) {
             this.assetIsPaused = true;
             this.assetFrameIdx = (this.assetFrameIdx + 1) % totalFrames;
         }
         ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-        ctx.fillRect(nextBtnX, scrubberY, 20, scrubberH);
+        ctx.fillRect(nextBtnX, scrubberY, 18, scrubberH);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(nextBtnX, scrubberY, 20, scrubberH);
+        ctx.strokeRect(nextBtnX, scrubberY, 18, scrubberH);
         ctx.fillStyle = '#e2e8f0';
-        ctx.fillText('▶', nextBtnX + 10, scrubberY + 14);
+        ctx.fillText('▶', nextBtnX + 9, scrubberY + 14);
 
         // Individual Clickable Frame Pills with Lock & Override Badges
-        const pillsAreaX = scrubberStartX + 24;
-        const pillsAreaW = scrubberW - 48;
-        const pillW = Math.min(32, Math.max(20, Math.floor((pillsAreaW - (totalFrames - 1) * 2) / totalFrames)));
+        const pillsAreaX = scrubberStartX + 22;
+        const pillsAreaW = scrubberW - 44;
+        const pillW = Math.min(32, Math.max(18, Math.floor((pillsAreaW - (totalFrames - 1) * 2) / totalFrames)));
         const totalPillsWidth = totalFrames * pillW + (totalFrames - 1) * 2;
         const pillsStartX = pillsAreaX + (pillsAreaW - totalPillsWidth) / 2;
 
