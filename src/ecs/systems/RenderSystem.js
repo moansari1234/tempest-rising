@@ -211,9 +211,9 @@ export class RenderSystem {
           
           // Calculate integer-scaled display dimensions
           let displayW, displayH;
-          if (sprite.spriteKey === 'serpent') {
-              displayW = 96; // 3x scale of 32x32 boss sprite
-              displayH = 96;
+          if (sprite.spriteKey === 'serpent' || sprite.spriteKey === 'boss_serpent') {
+              displayW = bitmap.width * 3; // 144px width
+              displayH = bitmap.height * 3; // 120px height
           } else if (bitmap.width >= 64) {
               displayW = bitmap.width * 0.5; // High-res sheet fallback
               displayH = bitmap.height * 0.5;

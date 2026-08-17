@@ -135,11 +135,23 @@ class Game {
   update(dt) {
     const state = this.gameStateManager.getState();
     
+    // Toggle Asset Gallery (V)
+    if (this.inputManager.isActionJustPressed('viewAssets')) {
+        if (state === GameState.ASSETS) {
+            this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
+        } else if (state === GameState.PLAYING || state === GameState.MENU || state === GameState.PAUSED) {
+            this.gameStateManager.setState(GameState.ASSETS);
+        }
+        this.inputManager.consumeAction('viewAssets');
+    }
+
     if (this.inputManager.isActionJustPressed('pause')) {
         if (state === GameState.PLAYING) {
             this.gameStateManager.setState(GameState.PAUSED);
         } else if (state === GameState.PAUSED) {
             this.gameStateManager.setState(GameState.PLAYING);
+        } else if (state === GameState.ASSETS) {
+            this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
         }
         this.inputManager.consumeAction('pause');
     }

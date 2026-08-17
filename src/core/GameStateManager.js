@@ -6,7 +6,8 @@ export const GameState = {
   DIALOGUE: 4,
   CUTSCENE: 5,
   GAME_OVER: 6,
-  LEVEL_TRANSITION: 7
+  LEVEL_TRANSITION: 7,
+  ASSETS: 8
 };
 
 export class GameStateManager {

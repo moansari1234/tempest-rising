@@ -20,7 +20,10 @@ export class InputManager {
       'skill4': ['4'],
       'pause': ['Escape', 'p', 'P'],
       'quit': ['q', 'Q'],
-      'interact': ['Enter', 'e', 'E']
+      'interact': ['Enter', 'e', 'E'],
+      'viewAssets': ['v', 'V'],
+      'stepBack': ['j', 'J', '['],
+      'stepForward': ['k', 'K', ']']
     };
     
     // Store timing for input buffering
