@@ -23,8 +23,36 @@ export class UISystem {
         this.assetFacing = 'right';
         this.titleBgImg = new Image();
         this.titleBgImg.src = '/public/sprites/backgrounds/title_bg.jpg';
-        this.loadingImg = new Image();
-        this.loadingImg.src = '/public/sprites/backgrounds/loading_screen_1.jpg';
+        
+        // 4 Dynamic Loading Screens with Great Sage Lore
+        this.loadingScreens = [
+            {
+                img: new Image(),
+                src: '/public/sprites/backgrounds/loading_screen_1.jpg',
+                title: 'THE WHISPERING CAVERNS',
+                lore: '« REPORT: GREAT SAGE — Analyzing Subterranean Magicules & Flora... »'
+            },
+            {
+                img: new Image(),
+                src: '/public/sprites/backgrounds/loading_screen_2.jpg',
+                title: 'THE MAGISTEEL MINING DEPTHS',
+                lore: '« REPORT: GREAT SAGE — High concentration of Magisteel Ore detected in lower strata. »'
+            },
+            {
+                img: new Image(),
+                src: '/public/sprites/backgrounds/loading_screen_3.jpg',
+                title: 'GREAT SAGE: PREDICTION ALGORITHM',
+                lore: '« REPORT: GREAT SAGE — Calculating future state probability & magicule synthesis vectors. »'
+            },
+            {
+                img: new Image(),
+                src: '/public/sprites/backgrounds/loading_screen_4.jpg',
+                title: 'THE TEMPEST SERPENT SANCTUARY',
+                lore: '« WARNING: GREAT SAGE — Immense ancient draconic presence detected ahead. Prepare for combat! »'
+            }
+        ];
+        this.loadingScreens.forEach(s => { s.img.src = s.src; });
+        this.currentLoadingIdx = 0;
         
         // Alignment Editor State
         this.assetTab = 'editor'; // 'editor' or 'dossier'
@@ -736,10 +764,11 @@ export class UISystem {
     }
 
     renderLevelTransition(ctx, canvas, context) {
-        if (this.loadingImg && this.loadingImg.complete && this.loadingImg.naturalWidth > 0) {
-            ctx.drawImage(this.loadingImg, 0, 0, canvas.width, canvas.height);
+        const screen = this.loadingScreens ? this.loadingScreens[this.currentLoadingIdx % this.loadingScreens.length] : null;
+        if (screen && screen.img && screen.img.complete && screen.img.naturalWidth > 0) {
+            ctx.drawImage(screen.img, 0, 0, canvas.width, canvas.height);
             const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, 'rgba(5, 10, 16, 0.4)');
+            grad.addColorStop(0, 'rgba(5, 10, 16, 0.35)');
             grad.addColorStop(1, 'rgba(5, 10, 16, 0.85)');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -751,14 +780,14 @@ export class UISystem {
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 26px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('ENTERING THE WHISPERING CAVERNS', canvas.width / 2, canvas.height / 2 - 20);
+        ctx.fillText(screen ? screen.title : 'ENTERING THE CAVERNS', canvas.width / 2, canvas.height / 2 - 20);
 
         ctx.fillStyle = '#facc15';
         ctx.font = 'bold 12px monospace';
-        ctx.fillText('« REPORT: GREAT SAGE — Analyzing Subterranean Magicules & Flora... »', canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText(screen ? screen.lore : '« REPORT: GREAT SAGE — Analyzing Subterranean Magicules... »', canvas.width / 2, canvas.height / 2 + 20);
 
         // Progress bar simulation
-        const pBarW = 320;
+        const pBarW = 340;
         const pBarH = 6;
         const pBarX = (canvas.width - pBarW) / 2;
         const pBarY = canvas.height / 2 + 45;
