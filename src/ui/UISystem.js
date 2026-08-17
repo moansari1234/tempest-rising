@@ -196,6 +196,81 @@ export class UISystem {
                 animations: ['activate'],
                 forcePack: null,
                 tint: null
+            },
+            {
+                id: 'warp_portal',
+                spriteKey: 'portal',
+                name: 'Dimensional Warp Portal',
+                category: 'Gateway Arch',
+                title: 'Dragon Arch Spatial Vortex',
+                lore: 'Ancient dragon-crested stone gateway housing a rotating cosmic blue-violet singularity that warps players across cavern floors and boss arenas.',
+                hp: 'Spatial Rift',
+                atk: 'Warp Entry',
+                def: 'Infinite',
+                speed: 'Continuous Vortex',
+                animations: ['idle', 'activate'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'treasure_chest',
+                spriteKey: 'chest',
+                name: 'Gilded Treasure Chest',
+                category: 'Interactive Loot',
+                title: 'Ancient Dwarven Relic Cache',
+                lore: 'Ironwood chest bound with forged gold filigree and sapphire rune lock. Opens to bestow gold bullion, rare gems, and restorative elixir potions.',
+                hp: 'Interact [E]',
+                atk: 'Loot Drop',
+                def: 'Rune Locked',
+                speed: 'Static',
+                animations: ['open'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'clay_urn',
+                spriteKey: 'urn',
+                name: 'Ancient Clay Urn',
+                category: 'Destructible Prop',
+                title: 'Sealed Potion Vessel',
+                lore: 'Terracotta jar sealed with enchanted red wax. Shatters into ceramic shards on impact, dropping silver coins and health orbs.',
+                hp: '1 Hit',
+                atk: '0',
+                def: '0',
+                speed: 'Static',
+                animations: ['break'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'dragon_torch',
+                spriteKey: 'torch',
+                name: 'Dragon Wall Torch',
+                category: 'Atmosphere Lighting',
+                title: 'Carved Sconce Flame',
+                lore: 'Wall-mounted iron dragon sconce burning with everlasting magical flame, casting dancing orange light and embers across damp dungeon stones.',
+                hp: 'Fixture',
+                atk: 'Illumination',
+                def: 'Infinite',
+                speed: 'Flame Dance',
+                animations: ['burn'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'rest_campfire',
+                spriteKey: 'campfire',
+                name: 'Adventurer Campfire',
+                category: 'Sanctuary Rest',
+                title: 'Hearthfire Sanctuary Site',
+                lore: 'A crackling stone-ringed hearth that restores stamina, clears poison status ailments, and saves cavern checkpoint progression.',
+                hp: 'Checkpoint',
+                atk: 'Regeneration',
+                def: 'Infinite',
+                speed: 'Flame Flickering',
+                animations: ['burn'],
+                forcePack: null,
+                tint: null
             }
         ];
     }
@@ -546,18 +621,32 @@ export class UISystem {
         ctx.textAlign = 'left';
         ctx.fillText('CHARACTER / SKIN ROSTER', sidebarX + 12, sidebarY + 18);
 
-        const cardSpacing = Math.min(48, Math.floor((sidebarH - 35) / this.entitiesList.length));
-        const cardH = cardSpacing - 4;
+        if (this.sidebarScrollOffset === undefined) this.sidebarScrollOffset = 0;
+        const maxVisibleCards = 9;
+        const cardH = 42;
+        const cardSpacing = 46;
 
-        for (let i = 0; i < this.entitiesList.length; i++) {
+        // Auto-scroll to keep selected item in view
+        if (this.assetEntityIdx < this.sidebarScrollOffset) {
+            this.sidebarScrollOffset = this.assetEntityIdx;
+        } else if (this.assetEntityIdx >= this.sidebarScrollOffset + maxVisibleCards) {
+            this.sidebarScrollOffset = this.assetEntityIdx - maxVisibleCards + 1;
+        }
+        this.sidebarScrollOffset = Math.max(0, Math.min(this.sidebarScrollOffset, this.entitiesList.length - maxVisibleCards));
+
+        const startIdx = this.sidebarScrollOffset;
+        const endIdx = Math.min(this.entitiesList.length, startIdx + maxVisibleCards);
+
+        for (let i = startIdx; i < endIdx; i++) {
             const ent = this.entitiesList[i];
-            const cardY = sidebarY + 28 + i * cardSpacing;
+            const displayRow = i - startIdx;
+            const cardY = sidebarY + 28 + displayRow * cardSpacing;
             const isSelected = i === this.assetEntityIdx;
             const activeSkin = spriteParser.getSkin(ent.spriteKey);
             const isEquipped = ent.forcePack !== null && ent.forcePack === activeSkin;
 
             // Mouse click support
-            if (inputManager.isClickInRect(sidebarX + 6, cardY, sidebarW - 12, cardH)) {
+            if (inputManager.isClickInRect(sidebarX + 6, cardY, sidebarW - 18, cardH)) {
                 this.assetEntityIdx = i;
                 this.assetAnimIdx = 0;
                 this.assetFrameIdx = 0;
@@ -565,35 +654,53 @@ export class UISystem {
 
             if (isSelected) {
                 ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
-                ctx.fillRect(sidebarX + 6, cardY, sidebarW - 12, cardH);
+                ctx.fillRect(sidebarX + 6, cardY, sidebarW - 18, cardH);
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 1.5;
-                ctx.strokeRect(sidebarX + 6, cardY, sidebarW - 12, cardH);
+                ctx.strokeRect(sidebarX + 6, cardY, sidebarW - 18, cardH);
 
                 // Left highlight bar
                 ctx.fillStyle = '#38bdf8';
                 ctx.fillRect(sidebarX + 6, cardY, 3, cardH);
-            } else if (inputManager.isHoverInRect(sidebarX + 6, cardY, sidebarW - 12, cardH)) {
+            } else if (inputManager.isHoverInRect(sidebarX + 6, cardY, sidebarW - 18, cardH)) {
                 ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
-                ctx.fillRect(sidebarX + 6, cardY, sidebarW - 12, cardH);
+                ctx.fillRect(sidebarX + 6, cardY, sidebarW - 18, cardH);
             }
 
             ctx.fillStyle = isSelected ? '#38bdf8' : '#e2e8f0';
             ctx.font = isSelected ? 'bold 10px monospace' : '10px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(ent.name, sidebarX + 16, cardY + Math.floor(cardH * 0.45));
+            ctx.fillText(ent.name, sidebarX + 16, cardY + 18);
 
             ctx.fillStyle = '#64748b';
             ctx.font = '8px monospace';
-            ctx.fillText(ent.category, sidebarX + 16, cardY + Math.floor(cardH * 0.82));
+            ctx.fillText(ent.category, sidebarX + 16, cardY + 34);
 
             // Active Equipped Tag
             if (isEquipped) {
                 ctx.fillStyle = '#22c55e';
                 ctx.font = 'bold 8px monospace';
                 ctx.textAlign = 'right';
-                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 12, cardY + Math.floor(cardH * 0.5));
+                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 22, cardY + 20);
             }
+        }
+
+        // Scrollbar Track & Thumb
+        if (this.entitiesList.length > maxVisibleCards) {
+            const scrollTrackX = sidebarX + sidebarW - 8;
+            const scrollTrackY = sidebarY + 28;
+            const scrollTrackH = sidebarH - 36;
+            
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.6)';
+            ctx.fillRect(scrollTrackX, scrollTrackY, 4, scrollTrackH);
+
+            const scrollRatio = maxVisibleCards / this.entitiesList.length;
+            const thumbH = Math.max(20, scrollTrackH * scrollRatio);
+            const maxScroll = this.entitiesList.length - maxVisibleCards;
+            const thumbY = scrollTrackY + (this.sidebarScrollOffset / maxScroll) * (scrollTrackH - thumbH);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(scrollTrackX, thumbY, 4, thumbH);
         }
 
         // --- 4. CENTER COLUMN: PREVIEW STAGE & ALL ANIMATION CLIPS (x: 258, w: 440, h: 450) ---

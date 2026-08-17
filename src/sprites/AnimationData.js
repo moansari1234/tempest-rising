@@ -43,6 +43,22 @@ export const AnimationData = {
   monolith: {
     activate: { frameTime: 0.22, frames: 4, loop: true }
   },
+  portal: {
+    idle: { frameTime: 0.14, frames: 4, loop: true },
+    activate: { frameTime: 0.18, frames: 4, loop: false }
+  },
+  chest: {
+    open: { frameTime: 0.18, frames: 4, loop: false }
+  },
+  urn: {
+    break: { frameTime: 0.12, frames: 4, loop: false }
+  },
+  torch: {
+    burn: { frameTime: 0.15, frames: 4, loop: true }
+  },
+  campfire: {
+    burn: { frameTime: 0.16, frames: 4, loop: true }
+  },
   tiles: {
     ground_mid: { frameTime: 1.0, frames: 1, loop: true },
     ground_left: { frameTime: 1.0, frames: 1, loop: true },

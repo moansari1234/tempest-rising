@@ -119,7 +119,11 @@ export class SpriteParser {
     const propAnims = {
       magisteel: { idle: 4, break: 4 },
       hipokute: { bloom: 4 },
-      monolith: { activate: 4 }
+      monolith: { activate: 4 },
+      chest: { open: 4 },
+      urn: { break: 4 },
+      torch: { burn: 4 },
+      campfire: { burn: 4 }
     };
 
     for (const [propKey, anims] of Object.entries(propAnims)) {
@@ -139,6 +143,29 @@ export class SpriteParser {
             }
           } catch (e) {}
         }
+      }
+    }
+
+    // 6. Load Dimensional Warp Gate Portal
+    const portalAnims = {
+      idle: 4,
+      activate: 4
+    };
+    for (const [animKey, frameCount] of Object.entries(portalAnims)) {
+      for (let i = 0; i < frameCount; i++) {
+        const pngPath = `/public/sprites/portal/${animKey}_${i}.png`;
+        try {
+          const img = new Image();
+          img.src = pngPath;
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+          if (img.complete && img.naturalWidth > 0) {
+            const bitmap = await createImageBitmap(img);
+            this.cache.set(`portal_${animKey}_${i}`, bitmap);
+          }
+        } catch (e) {}
       }
     }
 
