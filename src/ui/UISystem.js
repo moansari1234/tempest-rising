@@ -2,6 +2,10 @@ import { Health, AI, PlayerInput, Transform } from '../ecs/Components.js';
 import { GameState } from '../core/GameStateManager.js';
 
 export class UISystem {
+    constructor() {
+        this.ghostHp = 100;
+    }
+
     update(world, dt, context) {
         const { ctx, canvas, gameStateManager } = context;
         const state = gameStateManager.getState();
@@ -20,6 +24,7 @@ export class UISystem {
         } else if (state === GameState.GAME_OVER) {
             this.renderGameOver(ctx, canvas);
         } else if (state === GameState.LEVEL_TRANSITION) {
+            this.renderHUD(ctx, canvas, world, playerHealth, context);
             this.renderLevelTransition(ctx, canvas, context);
         }
         
@@ -32,18 +37,14 @@ export class UISystem {
         ctx.fillStyle = '#050A10';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center';
         ctx.fillText('TENSEI SLIME: TEMPEST RISING', canvas.width / 2, canvas.height / 3);
         
-        ctx.font = '16px monospace';
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText('A Slime\'s Journey to Power', canvas.width / 2, canvas.height / 3 + 30);
-        
+        ctx.font = '20px monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.font = '24px monospace';
-        ctx.fillText('[NEW GAME] (Press Z)', canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText('[START GAME] (Press Z)', canvas.width / 2, canvas.height / 2 + 20);
         
         if (localStorage.getItem('tempest_save_boss_defeated') === 'true') {
             ctx.fillStyle = '#22c55e';
@@ -55,11 +56,10 @@ export class UISystem {
         
         ctx.font = '12px monospace';
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText('Controls: WASD/Arrows to move • Space to jump • Z/X to attack • C to parry • E to devour', canvas.width / 2, canvas.height - 40);
+        ctx.fillText('Controls: WASD / Arrows to Move • Space to Jump • Z/X to Attack • C to Parry • E to Devour • Shift to Dash', canvas.width / 2, canvas.height - 40);
         
         // Handle input to start game
         if (context.inputManager.isActionJustPressed('attackLight')) {
-            localStorage.removeItem('tempest_save_boss_defeated'); // reset for new game if they press new game? Or leave it to main to handle
             context.gameStateManager.setState(GameState.PLAYING);
             if (context.audio) context.audio.playBGM();
         } else if (context.inputManager.isActionJustPressed('parry') && localStorage.getItem('tempest_save_boss_defeated') === 'true') {
@@ -71,70 +71,82 @@ export class UISystem {
     renderHUD(ctx, canvas, world, playerHealth, context) {
         if (!playerHealth) return;
         
+        // Smooth Ghost HP trailing bar
+        if (this.ghostHp === undefined) this.ghostHp = playerHealth.hp;
+        if (this.ghostHp > playerHealth.hp) {
+            this.ghostHp -= 0.5;
+        } else if (this.ghostHp < playerHealth.hp) {
+            this.ghostHp = playerHealth.hp;
+        }
+
         // HP Bar Background
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(20, 20, 200, 20);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(20, 20, 220, 22);
+
+        // Ghost Damage Bar (Orange trail)
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(20, 20, 220 * (Math.min(playerHealth.maxHp, this.ghostHp) / playerHealth.maxHp), 22);
         
-        // HP Bar Fill
-        ctx.fillStyle = '#22c55e';
-        ctx.fillRect(20, 20, 200 * (playerHealth.hp / playerHealth.maxHp), 20);
+        // HP Bar Fill (Vibrant green/cyan gradient)
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(20, 20, 220 * (playerHealth.hp / playerHealth.maxHp), 22);
         
         // HP Bar Border
         ctx.strokeStyle = '#f8fafc';
         ctx.lineWidth = 2;
-        ctx.strokeRect(20, 20, 200, 20);
+        ctx.strokeRect(20, 20, 220, 22);
 
         // HP Text
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px monospace';
+        ctx.font = 'bold 13px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(`HP: ${Math.floor(playerHealth.hp)}/${playerHealth.maxHp}`, 30, 35);
+        ctx.fillText(`HP: ${Math.floor(playerHealth.hp)}/${playerHealth.maxHp}`, 28, 36);
         
         // XP and Level
         if (context.xpSystem) {
             const xpSys = context.xpSystem;
-            ctx.font = '12px monospace';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(`LVL: ${xpSys.level}   SP: ${xpSys.sp}`, 20, 55);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(`LVL: ${xpSys.level}   SP: ${xpSys.sp}`, 20, 56);
             
             // XP bar
             const nextXp = xpSys.getXPThreshold(xpSys.level);
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(20, 60, 120, 8);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.fillRect(20, 62, 140, 8);
             ctx.fillStyle = '#3b82f6';
-            ctx.fillRect(20, 60, 120 * (xpSys.currentXP / nextXp), 8);
-            ctx.strokeStyle = '#94a3b8';
+            ctx.fillRect(20, 62, 140 * Math.min(1.0, (xpSys.currentXP / nextXp)), 8);
+            ctx.strokeStyle = '#64748b';
             ctx.lineWidth = 1;
-            ctx.strokeRect(20, 60, 120, 8);
+            ctx.strokeRect(20, 62, 140, 8);
         }
 
-        // Stage & Floor Banner
+        // Stage & Floor Banner (Top Right)
         if (context.levelManager && context.levelManager.stageName) {
             ctx.save();
             ctx.textAlign = 'right';
-            ctx.font = 'bold 13px monospace';
+            ctx.font = 'bold 14px monospace';
             ctx.fillStyle = '#38bdf8';
             ctx.fillText(context.levelManager.stageName, canvas.width - 20, 32);
             ctx.restore();
         }
         
-        // Combo HUD
+        // Dynamic Combo Streak Indicator
         const players = world.queryEntities([PlayerInput]);
         if (players.length > 0) {
             const input = world.getComponent(players[0], PlayerInput);
             if (input.comboHit > 0) {
                 ctx.textAlign = 'center';
-                ctx.font = 'bold 24px monospace';
                 if (input.comboHit === 1) {
                     ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 22px monospace';
                     ctx.fillText('HIT 1!', canvas.width / 2, canvas.height - 40);
                 } else if (input.comboHit === 2) {
                     ctx.fillStyle = '#f97316';
-                    ctx.font = 'bold 28px monospace';
+                    ctx.font = 'bold 26px monospace';
                     ctx.fillText('HIT 2!', canvas.width / 2, canvas.height - 40);
                 } else if (input.comboHit === 3) {
                     ctx.fillStyle = '#fbbf24';
-                    ctx.font = 'bold 36px monospace';
+                    ctx.font = 'bold 32px monospace';
                     ctx.fillText('FINISHER!', canvas.width / 2, canvas.height - 40);
                 }
             }
@@ -148,7 +160,7 @@ export class UISystem {
                 const bossHealth = world.getComponent(id, Health);
                 if (bossHealth.hp > 0 || !bossHealth.alive) {
                     const barWidth = 400;
-                    const barHeight = 24;
+                    const barHeight = 22;
                     const barX = (canvas.width / 2) - (barWidth / 2);
                     const barY = 40;
                     
@@ -159,20 +171,20 @@ export class UISystem {
                     ctx.fillRect(barX, barY, barWidth * (bossHealth.hp / bossHealth.maxHp), barHeight);
                     
                     ctx.strokeStyle = '#f8fafc';
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 2;
                     ctx.strokeRect(barX, barY, barWidth, barHeight);
                     
                     ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 16px monospace';
+                    ctx.font = 'bold 15px monospace';
                     ctx.textAlign = 'center';
-                    ctx.fillText('TEMPEST SERPENT', canvas.width / 2, barY - 10);
+                    ctx.fillText('TEMPEST SERPENT (BOSS)', canvas.width / 2, barY - 8);
                 }
             }
         }
     }
     
     renderPauseMenu(ctx, canvas) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#ffffff';
@@ -199,10 +211,14 @@ export class UISystem {
     }
     
     renderLevelTransition(ctx, canvas, context) {
-        if (context.transitionAlpha === undefined) context.transitionAlpha = 0;
-        
-        ctx.fillStyle = `rgba(0, 0, 0, ${context.transitionAlpha})`;
+        const pulse = Math.sin(performance.now() / 100) * 0.2 + 0.6;
+        ctx.fillStyle = `rgba(5, 10, 16, ${pulse})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 28px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('WARPING TO NEXT FLOOR...', canvas.width / 2, canvas.height / 2);
     }
     
     renderFloaters(ctx, dt, context) {

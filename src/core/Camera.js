@@ -13,11 +13,13 @@ export class Camera {
     // Tracking target
     this.target = null;
     
-    // Shake state
+    // Studio-grade Trauma-based Screen Shake
+    this.trauma = 0.0;
+    this.shakeDecay = 1.6;
+    this.maxShakeOffset = 14;
     this.shakeOffsetX = 0;
     this.shakeOffsetY = 0;
-    this.shakeTimer = 0;
-    this.shakeAmplitude = 0;
+    this._shakeTime = 0;
     
     // Zoom state (for bosses)
     this.zoom = 1.0;
@@ -34,49 +36,53 @@ export class Camera {
   }
 
   shake(amplitude, durationMs) {
-    this.shakeAmplitude = amplitude;
-    this.shakeTimer = durationMs / 1000.0; // Convert to seconds
+    // Add trauma proportional to amplitude (0.0 to 1.0)
+    const addAmount = Math.min(1.0, (amplitude / 12) + (durationMs / 600));
+    this.trauma = Math.min(1.0, this.trauma + addAmount);
   }
 
   setZoom(targetZoom) {
-      this.targetZoom = targetZoom;
+    this.targetZoom = targetZoom;
   }
 
   update(dt) {
     if (this.target) {
-      // Calculate target position with lead and deadzone
+      // Calculate target position with horizontal lead and framing
       let targetX = this.target.x - this.viewportWidth / 2 / this.zoom;
       let targetY = this.target.y - this.viewportHeight / 2 / this.zoom;
 
-      // Apply Lead based on facing direction
+      // Apply look-ahead lead in facing direction
       if (this.target.facing === 'right') {
-          targetX += CONSTANTS.CAMERA_LEAD;
+        targetX += CONSTANTS.CAMERA_LEAD;
       } else if (this.target.facing === 'left') {
-          targetX -= CONSTANTS.CAMERA_LEAD;
+        targetX -= CONSTANTS.CAMERA_LEAD;
       }
 
-      // Smooth follow (Lerp)
+      // Smooth Lerp follow
       this.x += (targetX - this.x) * CONSTANTS.CAMERA_LERP;
       this.y += (targetY - this.y) * CONSTANTS.CAMERA_LERP;
     }
 
-    // Clamp to bounds
-    this.x = Math.max(0, Math.min(this.x, this.bounds.width - this.viewportWidth / this.zoom));
-    this.y = Math.max(0, Math.min(this.y, this.bounds.height - this.viewportHeight / this.zoom));
+    // Clamp to level bounds
+    const maxCameraX = Math.max(0, this.bounds.width - this.viewportWidth / this.zoom);
+    const maxCameraY = Math.max(0, this.bounds.height - this.viewportHeight / this.zoom);
+    this.x = Math.max(0, Math.min(this.x, maxCameraX));
+    this.y = Math.max(0, Math.min(this.y, maxCameraY));
 
-    // Handle screen shake
-    if (this.shakeTimer > 0) {
-      this.shakeTimer -= dt;
-      // Oscillate between -amplitude and +amplitude
-      const decay = Math.max(0, this.shakeTimer);
-      this.shakeOffsetX = (Math.random() * 2 - 1) * this.shakeAmplitude * decay;
-      this.shakeOffsetY = (Math.random() * 2 - 1) * this.shakeAmplitude * decay;
+    // Handle smooth quadratic trauma shake
+    if (this.trauma > 0) {
+      this.trauma = Math.max(0, this.trauma - this.shakeDecay * dt);
+      const shakePower = this.trauma * this.trauma; // Quadratic response
+      this._shakeTime += dt * 32.0;
+
+      this.shakeOffsetX = this.maxShakeOffset * shakePower * Math.sin(this._shakeTime * 1.7);
+      this.shakeOffsetY = this.maxShakeOffset * 0.7 * shakePower * Math.sin(this._shakeTime * 2.3);
     } else {
       this.shakeOffsetX = 0;
       this.shakeOffsetY = 0;
     }
     
-    // Handle Zoom lerp
+    // Handle dynamic zoom lerp
     this.zoom += (this.targetZoom - this.zoom) * 0.05;
   }
 

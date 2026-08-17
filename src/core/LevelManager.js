@@ -97,10 +97,28 @@ export class LevelManager {
 
   checkTransition(rect) {
     if (!this.currentLevelData || !this.currentLevelData.next) return null;
-    const tile = this.getTileAtPixel(rect.x + rect.w / 2, rect.y + rect.h / 2);
-    if (tile === '>' || tile === '<') {
+    
+    // Check multiple points across the player's bounding box
+    const testPoints = [
+      { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 },
+      { x: rect.x + rect.w, y: rect.y + rect.h / 2 },
+      { x: rect.x + rect.w, y: rect.y + rect.h - 4 },
+      { x: rect.x + rect.w - 2, y: rect.y + 4 },
+      { x: rect.x, y: rect.y + rect.h / 2 }
+    ];
+
+    for (const p of testPoints) {
+      const tile = this.getTileAtPixel(p.x, p.y);
+      if (tile === '>' || tile === '<') {
         return this.currentLevelData.next;
+      }
     }
+
+    // Also trigger if touching right portal boundary
+    if (rect.x + rect.w >= (this.width - 1.2) * this.tileSize) {
+      return this.currentLevelData.next;
+    }
+
     return null;
   }
 
@@ -111,13 +129,13 @@ export class LevelManager {
     if (!tileBitmap) return;
 
     // Viewport culling bounds
-    const startCol = Math.floor(camera.x / this.tileSize);
-    const endCol = startCol + Math.floor(camera.viewportWidth / camera.zoom / this.tileSize) + 1;
-    const startRow = Math.floor(camera.y / this.tileSize);
-    const endRow = startRow + Math.floor(camera.viewportHeight / camera.zoom / this.tileSize) + 1;
+    const startCol = Math.max(0, Math.floor(camera.x / this.tileSize));
+    const endCol = Math.min(this.width - 1, startCol + Math.floor(camera.viewportWidth / (camera.zoom || 1.0) / this.tileSize) + 2);
+    const startRow = Math.max(0, Math.floor(camera.y / this.tileSize));
+    const endRow = Math.min(this.height - 1, startRow + Math.floor(camera.viewportHeight / (camera.zoom || 1.0) / this.tileSize) + 2);
 
-    for (let r = Math.max(0, startRow); r <= Math.min(this.height - 1, endRow); r++) {
-      for (let c = Math.max(0, startCol); c <= Math.min(this.width - 1, endCol); c++) {
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
         const tile = this.currentLevel[r][c];
         if (tile === '#') {
           ctx.drawImage(
@@ -130,12 +148,27 @@ export class LevelManager {
         } else if (tile === '>' || tile === '<') {
           // Render glowing portal exit gateway
           ctx.save();
-          const pulse = Math.sin(performance.now() / 150) * 0.3 + 0.7;
-          ctx.fillStyle = `rgba(56, 189, 248, ${0.4 * pulse})`;
+          const now = performance.now();
+          const pulse = Math.sin(now / 150) * 0.3 + 0.7;
+          
+          ctx.fillStyle = `rgba(56, 189, 248, ${0.35 * pulse})`;
           ctx.fillRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          
           ctx.strokeStyle = `rgba(165, 243, 252, ${pulse})`;
           ctx.lineWidth = 2;
           ctx.strokeRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+
+          // Swirling portal center icon
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(
+            c * this.tileSize + this.tileSize / 2, 
+            r * this.tileSize + this.tileSize / 2, 
+            4 + Math.sin(now / 100) * 2, 
+            0, 
+            Math.PI * 2
+          );
+          ctx.fill();
           ctx.restore();
         }
       }

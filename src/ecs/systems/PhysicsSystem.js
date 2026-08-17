@@ -27,6 +27,11 @@ export class PhysicsSystem {
           input.coyoteTimer -= dt;
       }
 
+      // Variable jump height: releasing jump key cuts upward velocity
+      if (velocity.vy < -50 && inputManager.isActionJustReleased('jump')) {
+          velocity.vy *= 0.5;
+      }
+
       // State Machine Transitions
       if (input.state === 'dash') {
           input.stateTimer -= dt;
@@ -230,7 +235,7 @@ export class PhysicsSystem {
               }
           }
 
-          // Jump
+          // Jump (with coyote time and double jump)
           if (inputManager.isActionJustPressed('jump')) {
               if (input.coyoteTimer > 0) {
                   velocity.vy = CONSTANTS.JUMP_FORCE;
@@ -297,12 +302,16 @@ export class PhysicsSystem {
           if (levelManager) {
               const rect = { x: transform.x + collider.offsetX, y: transform.y + collider.offsetY, w: collider.width, h: collider.height };
               
-              // Transition Check
+              // Transition Check (Check if player touched exit portal)
               const nextLevel = levelManager.checkTransition(rect);
               if (nextLevel && input && context.gameStateManager.getState() === GameState.PLAYING) {
                   context.gameStateManager.setState(GameState.LEVEL_TRANSITION);
                   if (!context.transitioning) {
                       context.transitioning = true;
+                      
+                      // Auto-save on floor transition
+                      if (context.xpSystem) context.xpSystem.save();
+                      
                       setTimeout(() => {
                           // Remove all previous enemy entities
                           const oldEnemies = world.queryEntities([Transform, Health, AI]);
@@ -329,7 +338,7 @@ export class PhysicsSystem {
                           velocity.vy = 0;
                           context.transitioning = false;
                           context.gameStateManager.setState(GameState.PLAYING);
-                      }, 500);
+                      }, 400);
                   }
                   continue; // Skip further physics updates for player this frame
               }
@@ -337,10 +346,8 @@ export class PhysicsSystem {
               if (levelManager.checkCollision(rect)) {
                   // Resolve X collision
                   if (velocity.vx > 0 || (velocity.vx === 0 && transform.facing === 'right')) {
-                      // hit right wall
                       transform.x = Math.floor((transform.x + collider.offsetX + collider.width) / levelManager.tileSize) * levelManager.tileSize - collider.width - collider.offsetX - 0.1;
                   } else {
-                      // hit left wall
                       transform.x = Math.floor((transform.x + collider.offsetX) / levelManager.tileSize + 1) * levelManager.tileSize - collider.offsetX + 0.1;
                   }
                   velocity.vx = 0;
@@ -354,11 +361,9 @@ export class PhysicsSystem {
               if (levelManager.checkCollision(rect)) {
                   // Resolve Y collision
                   if (velocity.vy > 0) {
-                      // hit floor
                       transform.y = Math.floor((transform.y + collider.offsetY + collider.height) / levelManager.tileSize) * levelManager.tileSize - collider.height - collider.offsetY - 0.1;
                       collider.onGround = true;
                   } else if (velocity.vy < 0) {
-                      // hit ceiling
                       transform.y = Math.floor((transform.y + collider.offsetY) / levelManager.tileSize + 1) * levelManager.tileSize - collider.offsetY + 0.1;
                   }
                   velocity.vy = 0;
