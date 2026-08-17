@@ -1,74 +1,66 @@
-# Tensei Slime: Tempest Rising
+# 🌊 Tensei Slime: Tempest Rising
 
-An action-packed 2D platformer game built from scratch using a custom Entity-Component-System (ECS) architecture in pure JavaScript, powered by Vite. Experience smooth platforming, combat mechanics (including hitstops, parries, and dashes), and epic boss fights (like the Tempest Serpent!).
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Framework: Pure JS / ECS](https://img.shields.io/badge/Framework-Pure%20JS%20%2F%20ECS-emerald.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Rendering: HTML5 Canvas](https://img.shields.io/badge/Rendering-HTML5%20Canvas-cyan.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
+
+An action-packed 2D Action-Platformer / Action RPG built from scratch in vanilla JavaScript utilizing a performant **Entity-Component-System (ECS)** architecture, custom 16-bit procedural autotiling, pixel art sprites, and screen-space anime HUD systems inspired by *That Time I Got Reincarnated as a Slime*.
 
 ---
 
-## 🎮 Game Controls
+## 📖 Complete Documentation Suite
 
-| Action | Controls |
+All system specifications and design documents are available in the [`docs/`](./docs) directory:
+
+| Document | Purpose |
 | :--- | :--- |
-| **Move Left** | `A` or `←` (Arrow Left) |
-| **Move Right** | `D` or `→` (Arrow Right) |
-| **Move Up / Climb** | `W` or `↑` (Arrow Up) |
-| **Move Down** | `S` or `↓` (Arrow Down) |
-| **Jump** | `Spacebar` |
-| **Dash** | `Shift` |
-| **Light Attack** | `Z` |
-| **Heavy Attack** | `X` |
-| **Parry** | `C` |
-| **Absorb / Predator / Interact** | `E` or `Enter` |
-| **Skills (1 - 4)** | `1`, `2`, `3`, `4` |
-| **Pause** | `Escape` or `P` |
+| [**`docs/GDD.md`**](./docs/GDD.md) | **Game Design Document:** Core gameplay loop, characters, enemies, props, and design vision. |
+| [**`docs/ARCHITECTURE.md`**](./docs/ARCHITECTURE.md) | **Technical Architecture:** ECS structure, systems pipeline, fixed-timestep loop, and caching. |
+| [**`docs/CONTROLS.md`**](./docs/CONTROLS.md) | **Controls & Combos:** Keybindings, coyote time, jump buffering, dash cancels, and combos. |
+| [**`docs/COMBAT_AND_SKILLS.md`**](./docs/COMBAT_AND_SKILLS.md) | **Combat & Devour System:** Frame data, damage formulas, Predator absorption, and acquired traits. |
+| [**`docs/LEVEL_DESIGN.md`**](./docs/LEVEL_DESIGN.md) | **Level Design & Autotiling:** 16-bit autotiling rules, platform metrics, reachability, and hazards. |
+| [**`docs/ART_AND_ANIMATION.md`**](./docs/ART_AND_ANIMATION.md) | **Art & Animation:** Sprite pipeline, 3-layer parallax backgrounds, palettes, and skin swapping. |
+| [**`docs/AUDIO_DESIGN.md`**](./docs/AUDIO_DESIGN.md) | **Audio Architecture:** Sound pools, bus mixer, BGM cues, and Great Sage chime SFX. |
+| [**`docs/GREAT_SAGE_SYSTEM.md`**](./docs/GREAT_SAGE_SYSTEM.md) | **Voice of the World:** Typewriter notification pipeline, event catalog, and anime styling. |
+| [**`docs/ROADMAP.md`**](./docs/ROADMAP.md) | **Roadmap & Milestones:** Phase 1 accomplishments and Phase 2 expansion plans. |
+| [**`docs/skills/SKILLS_INDEX.md`**](./docs/skills/SKILLS_INDEX.md) | **GameDev Skills Library:** Complete index of 69 downloaded game development skills. |
+
+---
+
+## 🎮 Quick Controls
+
+| Action | Primary Key | Secondary Key |
+| :--- | :---: | :---: |
+| **Move Left / Right** | `[A]` / `[D]` | `[←]` / `[→]` |
+| **Jump / Double Jump** | `[Space]` | — |
+| **Quick Dash** | `[Shift]` | — |
+| **Light Slash (3-Hit Combo)** | `[Z]` | `[J]` |
+| **Heavy Cleave (Guard Break)**| `[X]` | `[K]` |
+| **Parry / Deflect** | `[C]` | `[L]` |
+| **Predator (Devour) / Interact** | `[E]` | `[Enter]` |
+| **Inspect Asset Library** | `[V]` | — |
+| **Pause Game** | `[Escape]` | `[P]` |
 
 ---
 
 ## 🚀 Getting Started
 
-Follow these steps to run the game locally:
+### 1. Run with Python HTTP Server
+```bash
+python -m http.server 3000
+```
+Then open `http://localhost:3000` in your web browser.
 
-### 1. Install Dependencies
-Make sure you have [Node.js](https://nodejs.org/) installed, then run:
+### 2. Run with Node.js / Vite
 ```bash
 npm install
-```
-
-### 2. Run the Development Server
-Launch the Vite development server locally:
-```bash
 npm run dev
-```
-Open the URL shown in your terminal (usually `http://localhost:5173`) in your web browser.
-
-### 3. Build for Production
-To bundle and optimize the project for production deployment:
-```bash
-npm run build
-```
-
-### 4. Preview the Production Build
-Test the compiled production bundle locally before deploying:
-```bash
-npm run preview
 ```
 
 ---
 
-## 🛠️ Architecture & Features
-
-This project utilizes a customized **ECS (Entity-Component-System)** architecture designed specifically for performant 2D game loops.
-
-- **Entity-Component-System (ECS)**:
-  - **`World.js`**: Manages all entities, component registries, and registers game systems.
-  - **`Components.js`**: Lightweight, decoupled data containers (e.g., `Transform`, `Physics`, `Combat`, `Input`, `Render`).
-  - **`Systems`**: Modular logic controllers that update entities containing matching components:
-    - `PhysicsSystem.js`: Handles gravity, velocity, acceleration, and tile collisions.
-    - `AISystem.js`: Governs enemy behaviors and pathfinding.
-    - `CombatSystem.js`: Detects hitboxes, manages HP, triggers parries, and handles state changes.
-    - `RenderSystem.js`: Renders sprites, animations, and levels onto the Canvas.
-
-- **Key Game Mechanics**:
-  - **Fixed Timestep Loop**: Implements accumulator-based fixed timestep updates to ensure physics run identically across all hardware frame rates.
-  - **Combat Hitstop**: Temporarily freezes the game logic upon impact to deliver a satisfying, weightier sensation to attacks.
-  - **Level & Camera Managers**: Smoothly locks and scrolls the camera boundaries tracking the active entity (player) inside chapter maps.
-  - **Sprite Parser**: Custom JSON-driven sprite animator map parsing animation loops dynamically.
+## 🛠️ Engine Tech Highlights
+* **Deterministic Fixed Timestep:** $60\text{Hz}$ physics loop guarantees identical gameplay across all displays.
+* **16-Bit Procedural Autotiler:** Generates seamless $32\times32\text{px}$ slate and emerald moss tiles with zero visual gaps.
+* **Combat Hitstop:** Frame-freezing on heavy attacks and successful parries for satisfying combat weight.
+* **Non-Obtrusive Great Sage HUD:** Celestial typewriter notification modal positioned at the top-right screen space.
