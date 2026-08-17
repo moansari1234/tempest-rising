@@ -7,13 +7,13 @@ export class UISystem {
     constructor() {
         this.ghostHp = 100;
         
-        // Asset Viewer State
+        // Asset Library State
         this.assetEntityIdx = 0;
         this.assetAnimIdx = 0;
         this.assetFrameIdx = 0;
         this.assetFrameTimer = 0;
         this.assetIsPaused = false;
-        this.assetZoom = 4;
+        this.assetZoom = 1; // Default zoom is strictly 1x
         this.assetFacing = 'right';
 
         this.entitiesList = [
@@ -48,10 +48,40 @@ export class UISystem {
                 tint: null
             },
             {
+                id: 'goblin_archer_p1',
+                spriteKey: 'goblin_archer',
+                name: 'Goblin Sharpshooter (Pack 1)',
+                category: 'Ranged Enemy',
+                title: 'Bone-Bow Poison Sniper (Default)',
+                lore: 'Remastered marksman on a strict 16:9 grid with locked anatomical scale, high-tension bow draw, and toxic green arrow streak projectile.',
+                hp: '25',
+                atk: '10',
+                def: '2',
+                speed: '110 px/s',
+                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: 1,
+                tint: null
+            },
+            {
+                id: 'goblin_archer_p2',
+                spriteKey: 'goblin_archer',
+                name: 'Goblin Sharpshooter (Pack 2)',
+                category: 'Ranged Enemy',
+                title: 'Bone-Bow Marksman (Variant)',
+                lore: 'Alternative hooded goblin marksman variant with extended draw animations and green venom aura.',
+                hp: '25',
+                atk: '10',
+                def: '2',
+                speed: '110 px/s',
+                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: 2,
+                tint: null
+            },
+            {
                 id: 'goblin',
                 spriteKey: 'goblin',
                 name: 'Goblin Scout',
-                category: 'Common Marauder',
+                category: 'Melee Grunt',
                 title: 'Forest Dagger Assassin',
                 lore: 'Quick-footed forest goblins equipped with jagged steel daggers. Patrols caverns in packs and lunges with rapid slashes when alerting.',
                 hp: '30',
@@ -59,6 +89,7 @@ export class UISystem {
                 def: '2',
                 speed: '120 px/s',
                 animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: null,
                 tint: null
             },
             {
@@ -73,37 +104,8 @@ export class UISystem {
                 def: '6',
                 speed: '90 px/s',
                 animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: null,
                 tint: 'rgba(239, 68, 68, 0.35)'
-            },
-            {
-                id: 'goblin_archer_p1',
-                spriteKey: 'goblin_archer',
-                name: 'Goblin Sharpshooter (Pack 1 [Default])',
-                category: 'Ranged Sniper',
-                title: 'Bone-Bow Poison Sniper (Locked Scale)',
-                lore: 'Remastered marksman on a strict 16:9 grid with locked anatomical scale, high-tension bow draw, and toxic green arrow streak projectile.',
-                hp: '25',
-                atk: '10',
-                def: '2',
-                speed: '110 px/s',
-                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
-                forcePack: 1,
-                tint: null
-            },
-            {
-                id: 'goblin_archer_p2',
-                spriteKey: 'goblin_archer',
-                name: 'Goblin Sharpshooter (Pack 2 [Variant])',
-                category: 'Ranged Sniper',
-                title: 'Bone-Bow Marksman (Variant)',
-                lore: 'Alternative hooded goblin marksman variant with extended draw animations and green venom aura.',
-                hp: '25',
-                atk: '10',
-                def: '2',
-                speed: '110 px/s',
-                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
-                forcePack: 2,
-                tint: null
             },
             {
                 id: 'serpent',
@@ -117,13 +119,14 @@ export class UISystem {
                 def: '20',
                 speed: '80 px/s',
                 animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: null,
                 tint: null
             },
             {
                 id: 'tiles',
                 spriteKey: 'tiles',
                 name: 'Dungeon Architecture',
-                category: 'Environment Assets',
+                category: 'Environment',
                 title: 'Ancient Moss Stone & Portals',
                 lore: 'Modular 16x16 moss-crested dungeon masonry with beveled rock edges and illuminated dimensional warp gateways.',
                 hp: 'Solid',
@@ -131,6 +134,7 @@ export class UISystem {
                 def: 'Infinite',
                 speed: 'Static',
                 animations: ['ground'],
+                forcePack: null,
                 tint: null
             }
         ];
@@ -170,33 +174,28 @@ export class UISystem {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 34px monospace';
+        ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('TENSEI SLIME: TEMPEST RISING', canvas.width / 2, canvas.height / 3 - 25);
+        ctx.fillText('TENSEI SLIME: TEMPEST RISING', canvas.width / 2, canvas.height / 3 - 20);
         
-        ctx.font = '17px monospace';
+        ctx.font = '18px monospace';
         ctx.fillStyle = '#ffffff';
         ctx.fillText('[START GAME] (Press Z)', canvas.width / 2, canvas.height / 2 - 10);
         
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText('[ASSETS GALLERY] (Press V)', canvas.width / 2, canvas.height / 2 + 25);
-
-        // Active Theme Pack Indicator in Menu
-        const activePack = context.spriteParser ? context.spriteParser.activePack : 1;
-        ctx.fillStyle = activePack === 1 ? '#38bdf8' : '#a855f7';
-        ctx.fillText(`[SKIN PACK: ${activePack === 1 ? '1 (Classic - Default)' : '2 (Arcade HD)'}] (Press T to Toggle)`, canvas.width / 2, canvas.height / 2 + 60);
+        ctx.fillText('[ASSET LIBRARY & SKINS] (Press V)', canvas.width / 2, canvas.height / 2 + 35);
 
         if (localStorage.getItem('tempest_save_boss_defeated') === 'true') {
             ctx.fillStyle = '#22c55e';
-            ctx.fillText('[CONTINUE] (Press C)', canvas.width / 2, canvas.height / 2 + 95);
+            ctx.fillText('[CONTINUE] (Press C)', canvas.width / 2, canvas.height / 2 + 80);
         } else {
             ctx.fillStyle = '#475569';
-            ctx.fillText('[CONTINUE] (Locked)', canvas.width / 2, canvas.height / 2 + 95);
+            ctx.fillText('[CONTINUE] (Locked)', canvas.width / 2, canvas.height / 2 + 80);
         }
         
         ctx.font = '12px monospace';
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText('Controls: WASD / Arrows to Move • Space to Jump • Z/X to Attack • C to Parry • E to Devour • Shift to Dash • T to Swap Skin', canvas.width / 2, canvas.height - 30);
+        ctx.fillText('Controls: WASD / Arrows to Move • Space to Jump • Z/X to Attack • C to Parry • E to Devour • Shift to Dash', canvas.width / 2, canvas.height - 35);
         
         // Handle input to start game or open gallery
         if (context.inputManager.isActionJustPressed('attackLight')) {
@@ -209,181 +208,173 @@ export class UISystem {
             if (context.audio) context.audio.playBGM();
         }
     }
-    
-    renderHUD(ctx, canvas, world, playerHealth, context) {
-        if (!playerHealth) return;
-        
-        // Smooth Ghost HP trailing bar
-        if (this.ghostHp === undefined) this.ghostHp = playerHealth.hp;
-        if (this.ghostHp > playerHealth.hp) {
-            this.ghostHp -= 0.5;
-        } else if (this.ghostHp < playerHealth.hp) {
-            this.ghostHp = playerHealth.hp;
-        }
 
-        // HP Bar Background
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.fillRect(20, 20, 220, 22);
-
-        // Ghost Damage Bar (Orange trail)
-        ctx.fillStyle = '#ea580c';
-        ctx.fillRect(20, 20, 220 * (Math.min(playerHealth.maxHp, this.ghostHp) / playerHealth.maxHp), 22);
-        
-        // HP Bar Fill (Vibrant green/cyan gradient)
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(20, 20, 220 * (playerHealth.hp / playerHealth.maxHp), 22);
-        
-        // HP Bar Border
-        ctx.strokeStyle = '#f8fafc';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 20, 220, 22);
-
-        // HP Text
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 13px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`HP: ${Math.floor(playerHealth.hp)}/${playerHealth.maxHp}`, 28, 36);
-        
-        // XP and Level
-        if (context.xpSystem) {
-            const xpSys = context.xpSystem;
-            ctx.font = 'bold 12px monospace';
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillText(`LVL: ${xpSys.level}   SP: ${xpSys.sp}`, 20, 56);
-            
-            // XP bar
-            const nextXp = xpSys.getXPThreshold(xpSys.level);
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.fillRect(20, 62, 140, 8);
-            ctx.fillStyle = '#3b82f6';
-            ctx.fillRect(20, 62, 140 * Math.min(1.0, (xpSys.currentXP / nextXp)), 8);
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(20, 62, 140, 8);
-        }
-
-        // Stage & Floor Banner (Top Right)
-        if (context.levelManager && context.levelManager.stageName) {
-            ctx.save();
-            ctx.textAlign = 'right';
-            ctx.font = 'bold 14px monospace';
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillText(context.levelManager.stageName, canvas.width - 20, 32);
-            ctx.restore();
-        }
-        
-        // Dynamic Combo Streak Indicator
-        const players = world.queryEntities([PlayerInput]);
-        if (players.length > 0) {
-            const input = world.getComponent(players[0], PlayerInput);
-            if (input.comboHit > 0) {
-                ctx.textAlign = 'center';
-                if (input.comboHit === 1) {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 22px monospace';
-                    ctx.fillText('HIT 1!', canvas.width / 2, canvas.height - 40);
-                } else if (input.comboHit === 2) {
-                    ctx.fillStyle = '#f97316';
-                    ctx.font = 'bold 26px monospace';
-                    ctx.fillText('HIT 2!', canvas.width / 2, canvas.height - 40);
-                } else if (input.comboHit === 3) {
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.font = 'bold 32px monospace';
-                    ctx.fillText('FINISHER!', canvas.width / 2, canvas.height - 40);
-                }
-            }
-        }
-        
-        // Boss HP
-        const bosses = world.queryEntities([Transform, Health, AI]);
-        for (const id of bosses) {
-            const ai = world.getComponent(id, AI);
-            if (ai.type === 'boss_serpent') {
-                const bossHealth = world.getComponent(id, Health);
-                if (bossHealth.hp > 0 || !bossHealth.alive) {
-                    const barWidth = 400;
-                    const barHeight = 22;
-                    const barX = (canvas.width / 2) - (barWidth / 2);
-                    const barY = 40;
-                    
-                    ctx.fillStyle = '#1e293b';
-                    ctx.fillRect(barX, barY, barWidth, barHeight);
-                    
-                    ctx.fillStyle = '#9333ea';
-                    ctx.fillRect(barX, barY, barWidth * (bossHealth.hp / bossHealth.maxHp), barHeight);
-                    
-                    ctx.strokeStyle = '#f8fafc';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(barX, barY, barWidth, barHeight);
-                    
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 15px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('TEMPEST SERPENT (BOSS)', canvas.width / 2, barY - 8);
-                }
-            }
-        }
-    }
-    
     renderPauseMenu(ctx, canvas, context) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        ctx.fillStyle = 'rgba(5, 10, 16, 0.75)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 36px monospace';
+        ctx.font = 'bold 28px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('⏸ PAUSED', canvas.width / 2, canvas.height / 2 - 40);
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 40);
         
         ctx.font = '16px monospace';
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText('[RESUME (P / ESC)]     [ASSETS GALLERY (V)]     [QUIT TO MENU (Q)]', canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText('Resume (Press P / Esc)', canvas.width / 2, canvas.height / 2 + 5);
+        
+        ctx.fillStyle = '#22c55e';
+        ctx.fillText('Asset Library & Skins (Press V)', canvas.width / 2, canvas.height / 2 + 40);
 
-        if (context.inputManager.isActionJustPressed('viewAssets')) {
-            context.gameStateManager.setState(GameState.ASSETS);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('Quit to Menu (Press Q)', canvas.width / 2, canvas.height / 2 + 75);
+    }
+
+    renderHUD(ctx, canvas, world, playerHealth, context) {
+        const hudX = 20;
+        const hudY = 20;
+        const barWidth = 200;
+        const barHeight = 16;
+        
+        // --- 1. PLAYER HEALTH & GHOST DAMAGE BAR ---
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(hudX - 5, hudY - 5, barWidth + 10, barHeight * 3 + 24);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(hudX - 5, hudY - 5, barWidth + 10, barHeight * 3 + 24);
+
+        if (playerHealth) {
+            const currentHp = Math.max(0, playerHealth.current);
+            const maxHp = playerHealth.max;
+            const hpRatio = currentHp / maxHp;
+            
+            if (this.ghostHp > currentHp) {
+                this.ghostHp = Math.max(currentHp, this.ghostHp - 0.5);
+            } else {
+                this.ghostHp = currentHp;
+            }
+            const ghostRatio = this.ghostHp / maxHp;
+
+            // Ghost damage trailing bar
+            ctx.fillStyle = '#f87171';
+            ctx.fillRect(hudX, hudY, barWidth * ghostRatio, barHeight);
+
+            // Active Green HP Bar
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(hudX, hudY, barWidth * hpRatio, barHeight);
+            
+            // HP Bar Outline
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(hudX, hudY, barWidth, barHeight);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(`HP: ${Math.round(currentHp)} / ${maxHp}`, hudX + 5, hudY + 12);
+        }
+
+        // --- 2. SKILL COOLDOWNS & MANA / MP BARS ---
+        const cdY = hudY + barHeight + 8;
+        const cdKeys = ['Z: ATK', 'X: HEAVY', 'C: PARRY', 'E: ABSORB', 'SHIFT: DASH'];
+        ctx.font = '9px monospace';
+        for (let i = 0; i < cdKeys.length; i++) {
+            const pillX = hudX + (i * 42);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+            ctx.fillRect(pillX, cdY, 38, 14);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeRect(pillX, cdY, 38, 14);
+            
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillText(cdKeys[i], pillX + 3, cdY + 10);
+        }
+
+        // --- 3. COMBO STREAK & MULTIPLIER ---
+        if (context.comboCount && context.comboCount > 1) {
+            ctx.fillStyle = '#facc15';
+            ctx.font = 'bold 16px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${context.comboCount}x COMBO!`, hudX, hudY + 65);
+        }
+
+        // --- 4. STAGE / FLOOR INDICATOR ---
+        if (context.levelManager) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 13px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(context.levelManager.stageName || 'Floor 1-1', canvas.width - 25, 35);
+        }
+
+        // --- 5. BOSS HEALTH BAR (IF ACTIVE) ---
+        const bossEntities = world.queryEntities([AI, Health, Transform]);
+        for (const bossId of bossEntities) {
+            const ai = world.getComponent(bossId, AI);
+            const bossHp = world.getComponent(bossId, Health);
+            if (ai.type === 'boss_serpent' && bossHp.alive) {
+                const bBarW = 400;
+                const bBarH = 14;
+                const bBarX = (canvas.width - bBarW) / 2;
+                const bBarY = canvas.height - 40;
+
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fillRect(bBarX - 5, bBarY - 20, bBarW + 10, bBarH + 26);
+                ctx.strokeStyle = '#a855f7';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(bBarX - 5, bBarY - 20, bBarW + 10, bBarH + 26);
+
+                ctx.fillStyle = '#a855f7';
+                ctx.font = 'bold 12px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText('TEMPEST SERPENT (LEVIATHAN)', bBarX, bBarY - 5);
+
+                const bRatio = Math.max(0, bossHp.current / bossHp.max);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(bBarX, bBarY, bBarW * bRatio, bBarH);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${Math.round(bossHp.current)} / ${bossHp.max}`, bBarX + bBarW / 2, bBarY + 11);
+            }
         }
     }
-    
+
     renderGameOver(ctx, canvas) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillStyle = 'rgba(15, 5, 5, 0.85)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 48px monospace';
+        ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('DEFEATED', canvas.width / 2, canvas.height / 2 - 20);
         
         ctx.fillStyle = '#ffffff';
         ctx.font = '16px monospace';
-        ctx.fillText('Refresh the page to try again.', canvas.width / 2, canvas.height / 2 + 40);
+        ctx.fillText('Press R to Revive at Cavern Entrance', canvas.width / 2, canvas.height / 2 + 25);
     }
-    
+
     renderLevelTransition(ctx, canvas, context) {
-        const pulse = Math.sin(performance.now() / 100) * 0.2 + 0.6;
-        ctx.fillStyle = `rgba(5, 10, 16, ${pulse})`;
+        ctx.fillStyle = 'rgba(5, 10, 16, 0.6)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 28px monospace';
+        ctx.font = 'bold 24px monospace';
         ctx.textAlign = 'center';
         ctx.fillText('WARPING TO NEXT FLOOR...', canvas.width / 2, canvas.height / 2);
     }
 
-    // ==========================================
-    // INTERACTIVE ASSET VIEWER & BESTIARY
-    // ==========================================
     renderAssetViewer(ctx, canvas, context, dt) {
-        const inputManager = context.inputManager;
-        const spriteParser = context.spriteParser;
-        const totalEntities = this.entitiesList.length;
+        const { inputManager, spriteParser } = context;
+        if (!inputManager || !spriteParser) return;
 
-        // Input Navigation Handling
+        // --- 1. KEYBOARD INPUT PROCESSING ---
+        // Cycle Selected Entity (A / D or Left / Right)
         if (inputManager.isActionJustPressed('moveRight')) {
-            this.assetEntityIdx = (this.assetEntityIdx + 1) % totalEntities;
+            this.assetEntityIdx = (this.assetEntityIdx + 1) % this.entitiesList.length;
             this.assetAnimIdx = 0;
             this.assetFrameIdx = 0;
             this.assetFrameTimer = 0;
         } else if (inputManager.isActionJustPressed('moveLeft')) {
-            this.assetEntityIdx = (this.assetEntityIdx - 1 + totalEntities) % totalEntities;
+            this.assetEntityIdx = (this.assetEntityIdx - 1 + this.entitiesList.length) % this.entitiesList.length;
             this.assetAnimIdx = 0;
             this.assetFrameIdx = 0;
             this.assetFrameTimer = 0;
@@ -392,6 +383,7 @@ export class UISystem {
         const currentEntity = this.entitiesList[this.assetEntityIdx];
         const animList = currentEntity.animations;
 
+        // Cycle Animation Clip (W / S or Up / Down)
         if (inputManager.isActionJustPressed('moveDown')) {
             this.assetAnimIdx = (this.assetAnimIdx + 1) % animList.length;
             this.assetFrameIdx = 0;
@@ -407,8 +399,18 @@ export class UISystem {
             this.assetIsPaused = !this.assetIsPaused;
         }
 
-        // Frame Stepping
-        const currentAnimKey = animList[this.assetAnimIdx];
+        // Equip Current Skin Variant (Enter / E)
+        if (inputManager.isActionJustPressed('interact')) {
+            if (currentEntity.forcePack !== null) {
+                spriteParser.setSkin(currentEntity.spriteKey, currentEntity.forcePack);
+                if (context.floaterQueue) {
+                    this.triggerEquipNotification(context, `✨ EQUIPPED: ${currentEntity.name}`);
+                }
+            }
+        }
+
+        // Frame Stepping (J / K or [ / ])
+        const currentAnimKey = animList[this.assetAnimIdx] || 'idle';
         const entityAnimData = AnimationData[currentEntity.spriteKey] ? AnimationData[currentEntity.spriteKey][currentAnimKey] : { frames: 1, frameTime: 0.2 };
         const totalFrames = entityAnimData ? entityAnimData.frames : 1;
 
@@ -420,9 +422,9 @@ export class UISystem {
             this.assetFrameIdx = (this.assetFrameIdx - 1 + totalFrames) % totalFrames;
         }
 
-        // Zoom In / Out
+        // Zoom Cycle: 1x -> 2x -> 3x -> 4x -> 1x (Attack Light / Z)
         if (inputManager.isActionJustPressed('attackLight')) {
-            this.assetZoom = this.assetZoom >= 8 ? 2 : this.assetZoom + 2;
+            this.assetZoom = this.assetZoom >= 4 ? 1 : this.assetZoom + 1;
         }
 
         // Flip Facing (Parry / C)
@@ -437,7 +439,7 @@ export class UISystem {
         }
 
         // Animation Time Progression
-        const frameDt = context._frameDt || 0.016;
+        const frameDt = dt || 0.016;
         if (!this.assetIsPaused && entityAnimData) {
             this.assetFrameTimer += frameDt;
             if (this.assetFrameTimer >= (entityAnimData.frameTime || 0.15)) {
@@ -446,29 +448,29 @@ export class UISystem {
             }
         }
 
-        // --- DRAW ASSET GALLERY INTERFACE ---
-        // 1. Studio Obsidian Background
-        ctx.fillStyle = '#060B12';
+        // --- 2. RENDER ASSET LIBRARY UI ---
+        // Obsidian Matte Background
+        ctx.fillStyle = '#050911';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Header Title
+        // Header Title Bar
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 22px monospace';
+        ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText('🏛 ASSET INSPECTOR & BESTIARY', 25, 38);
+        ctx.fillText('🏛 ASSET LIBRARY & SKIN DRESSING ROOM', 25, 34);
 
         ctx.fillStyle = '#94a3b8';
         ctx.font = '12px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText('[ESC / V] Exit Gallery', canvas.width - 25, 38);
+        ctx.fillText('[ESC / V] Return to Game', canvas.width - 25, 34);
 
-        // 2. Left Sidebar: Entity Category Navigation
+        // --- 3. LEFT SIDEBAR: ROSTER & SKINS ---
         const sidebarX = 25;
-        const sidebarY = 60;
-        const sidebarW = 240;
+        const sidebarY = 50;
+        const sidebarW = 260;
         const sidebarH = canvas.height - 110;
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
         ctx.fillRect(sidebarX, sidebarY, sidebarW, sidebarH);
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1.5;
@@ -477,60 +479,54 @@ export class UISystem {
         ctx.fillStyle = '#64748b';
         ctx.font = 'bold 11px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText('ENTITIES & ASSET SETS', sidebarX + 15, sidebarY + 25);
+        ctx.fillText('CHARACTER & ENEMY ROSTER', sidebarX + 14, sidebarY + 22);
 
         for (let i = 0; i < this.entitiesList.length; i++) {
             const ent = this.entitiesList[i];
-            const itemY = sidebarY + 42 + i * 44;
+            const itemY = sidebarY + 32 + i * 40;
             const isSelected = i === this.assetEntityIdx;
+            const activeSkin = spriteParser.getSkin(ent.spriteKey);
+            const isEquipped = ent.forcePack !== null && ent.forcePack === activeSkin;
 
             if (isSelected) {
                 ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
-                ctx.fillRect(sidebarX + 8, itemY, sidebarW - 16, 36);
+                ctx.fillRect(sidebarX + 8, itemY, sidebarW - 16, 34);
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 1.5;
-                ctx.strokeRect(sidebarX + 8, itemY, sidebarW - 16, 36);
+                ctx.strokeRect(sidebarX + 8, itemY, sidebarW - 16, 34);
             }
 
             ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
-            ctx.font = isSelected ? 'bold 13px monospace' : '12px monospace';
+            ctx.font = isSelected ? 'bold 12px monospace' : '11px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(ent.name, sidebarX + 20, itemY + 18);
+            ctx.fillText(ent.name, sidebarX + 16, itemY + 16);
 
             ctx.fillStyle = '#64748b';
-            ctx.font = '10px monospace';
-            ctx.fillText(ent.category, sidebarX + 20, itemY + 30);
+            ctx.font = '9px monospace';
+            ctx.fillText(ent.category, sidebarX + 16, itemY + 28);
+
+            // Active Equipped Tag
+            if (isEquipped) {
+                ctx.fillStyle = '#22c55e';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 16, itemY + 20);
+            }
         }
 
-        // Animation Selector List on Left Sidebar Bottom
-        const animBoxY = sidebarY + 280;
-        ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 11px monospace';
-        ctx.fillText('ANIMATION CLIPS', sidebarX + 15, animBoxY);
-
-        for (let j = 0; j < Math.min(6, animList.length); j++) {
-            const anim = animList[j];
-            const aY = animBoxY + 16 + j * 24;
-            const isASelected = j === this.assetAnimIdx;
-
-            ctx.fillStyle = isASelected ? '#22c55e' : '#64748b';
-            ctx.font = isASelected ? 'bold 12px monospace' : '11px monospace';
-            ctx.fillText(`${isASelected ? '▶ ' : '  '}${anim}`, sidebarX + 15, aY + 12);
-        }
-
-        // 3. Center Studio: Viewport Showcase & Checkerboard
-        const studioX = 280;
-        const studioY = 60;
+        // --- 4. CENTER STAGE: PREVIEW STUDIO ---
+        const studioX = 300;
+        const studioY = 50;
         const studioW = 380;
         const studioH = canvas.height - 110;
 
-        ctx.fillStyle = '#0a101d';
+        ctx.fillStyle = '#080e1a';
         ctx.fillRect(studioX, studioY, studioW, studioH);
         ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(studioX, studioY, studioW, studioH);
 
-        // Checkerboard Backdrop inside Studio
+        // Transparent Checkerboard Backdrop
         const cbSize = 16;
         for (let cy = studioY + 2; cy < studioY + studioH - 2; cy += cbSize) {
             for (let cx = studioX + 2; cx < studioX + studioW - 2; cx += cbSize) {
@@ -541,9 +537,9 @@ export class UISystem {
             }
         }
 
-        // Floor Anchor Guide
-        const groundLineY = studioY + studioH - 60;
-        ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)';
+        // Center Origin Crosshair & Ground Line
+        const groundLineY = studioY + studioH - 85;
+        ctx.strokeStyle = 'rgba(74, 222, 128, 0.45)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(studioX + 20, groundLineY);
@@ -556,7 +552,16 @@ export class UISystem {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
 
-            const baseScale = bitmap.width > 150 ? 0.3 * (this.assetZoom / 4) : (this.assetZoom);
+            // Strict 1x base scaling with zoom factor
+            let baseScale = this.assetZoom;
+            if (bitmap.width >= 100) {
+                baseScale = 0.5 * this.assetZoom; // High-res sheet
+            } else if (bitmap.width <= 32) {
+                baseScale = 2.0 * this.assetZoom; // 16-bit pixel art
+            } else {
+                baseScale = 1.0 * this.assetZoom;
+            }
+
             const dispW = bitmap.width * baseScale;
             const dispH = bitmap.height * baseScale;
 
@@ -585,61 +590,109 @@ export class UISystem {
             ctx.restore();
         }
 
-        // Studio Playback Badges & Controls
+        // Studio Playback State Badge
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + 15, studioY + 15, 110, 24);
+        ctx.fillRect(studioX + 12, studioY + 12, 105, 22);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + 15, studioY + 15, 110, 24);
-
+        ctx.strokeRect(studioX + 12, studioY + 12, 105, 22);
         ctx.fillStyle = this.assetIsPaused ? '#f59e0b' : '#10b981';
-        ctx.font = 'bold 11px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED' : '▶ PLAYING', studioX + 70, studioY + 31);
+        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED' : '▶ PLAYING', studioX + 64, studioY + 26);
 
-        // Zoom Badge
+        // Zoom Badge (Shows 1x Default)
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + studioW - 95, studioY + 15, 80, 24);
+        ctx.fillRect(studioX + studioW - 88, studioY + 12, 76, 22);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + studioW - 95, studioY + 15, 80, 24);
+        ctx.strokeRect(studioX + studioW - 88, studioY + 12, 76, 22);
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText(`ZOOM: ${this.assetZoom}x`, studioX + studioW - 55, studioY + 31);
+        ctx.fillText(`ZOOM: ${this.assetZoom}x (Z)`, studioX + studioW - 50, studioY + 26);
 
-        // Frame Timeline Indicator (e.g. Frame 1 / 4)
+        // Frame Ticker Scrubber Bar
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 13px monospace';
+        ctx.font = 'bold 12px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`Frame ${this.assetFrameIdx + 1} / ${totalFrames}   (${currentAnimKey})`, studioX + studioW / 2, studioY + studioH - 25);
+        ctx.fillText(`Frame ${this.assetFrameIdx + 1} / ${totalFrames}   [${currentAnimKey.toUpperCase()}]`, studioX + studioW / 2, groundLineY + 25);
 
-        // 4. Right Sidebar: Entity Technical Dossier & Lore
-        const rightX = 675;
-        const rightY = 60;
+        // Animation Clip Pill Bar
+        const pillBarY = groundLineY + 42;
+        const visibleClips = animList.slice(0, 5);
+        for (let k = 0; k < visibleClips.length; k++) {
+            const clip = visibleClips[k];
+            const isCSelected = k === this.assetAnimIdx;
+            const pW = 66;
+            const pX = studioX + 16 + k * (pW + 6);
+            
+            ctx.fillStyle = isCSelected ? '#38bdf8' : 'rgba(30, 41, 59, 0.7)';
+            ctx.fillRect(pX, pillBarY, pW, 20);
+            ctx.strokeStyle = isCSelected ? '#0284c7' : '#475569';
+            ctx.strokeRect(pX, pillBarY, pW, 20);
+
+            ctx.fillStyle = isCSelected ? '#0f172a' : '#cbd5e1';
+            ctx.font = isCSelected ? 'bold 9px monospace' : '9px monospace';
+            ctx.fillText(clip.toUpperCase(), pX + pW / 2, pillBarY + 13);
+        }
+
+        // --- 5. RIGHT SIDEBAR: DOSSIER & EQUIP SELECTION ---
+        const rightX = 695;
+        const rightY = 50;
         const rightW = canvas.width - rightX - 25;
         const rightH = canvas.height - 110;
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
         ctx.fillRect(rightX, rightY, rightW, rightH);
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(rightX, rightY, rightW, rightH);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 16px monospace';
+        ctx.font = 'bold 15px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(currentEntity.name, rightX + 15, rightY + 30);
+        ctx.fillText(currentEntity.name, rightX + 15, rightY + 26);
 
         ctx.fillStyle = '#a855f7';
         ctx.font = 'bold 11px monospace';
-        ctx.fillText(currentEntity.title, rightX + 15, rightY + 48);
+        ctx.fillText(currentEntity.title, rightX + 15, rightY + 44);
+
+        // Equip / Active Status Banner
+        const equipBoxY = rightY + 56;
+        const activeSkin = spriteParser.getSkin(currentEntity.spriteKey);
+        const isCurrentlyEquipped = currentEntity.forcePack !== null && currentEntity.forcePack === activeSkin;
+
+        if (currentEntity.forcePack !== null) {
+            if (isCurrentlyEquipped) {
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.18)';
+                ctx.fillRect(rightX + 15, equipBoxY, rightW - 30, 32);
+                ctx.strokeStyle = '#22c55e';
+                ctx.strokeRect(rightX + 15, equipBoxY, rightW - 30, 32);
+
+                ctx.fillStyle = '#22c55e';
+                ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('✔ CURRENTLY EQUIPPED IN GAME', rightX + rightW / 2, equipBoxY + 20);
+            } else {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+                ctx.fillRect(rightX + 15, equipBoxY, rightW - 30, 32);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.strokeRect(rightX + 15, equipBoxY, rightW - 30, 32);
+
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 11px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('[PRESS ENTER TO EQUIP SKIN]', rightX + rightW / 2, equipBoxY + 20);
+            }
+        }
 
         // Lore Description Box
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '11px monospace';
-        this.wrapText(ctx, currentEntity.lore, rightX + 15, rightY + 75, rightW - 30, 16);
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'left';
+        this.wrapText(ctx, currentEntity.lore, rightX + 15, rightY + 106, rightW - 30, 15);
 
-        // Combat Stats Card
-        const statsBoxY = rightY + 160;
+        // Combat Attributes Section
+        const statsBoxY = rightY + 185;
         ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 11px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.fillText('COMBAT PROFILE', rightX + 15, statsBoxY);
 
         const stats = [
@@ -651,68 +704,95 @@ export class UISystem {
         ];
 
         for (let s = 0; s < stats.length; s++) {
-            const sY = statsBoxY + 20 + s * 24;
+            const sY = statsBoxY + 16 + s * 22;
             ctx.fillStyle = '#94a3b8';
-            ctx.font = '11px monospace';
+            ctx.font = '10px monospace';
             ctx.fillText(stats[s].label, rightX + 15, sY);
 
             ctx.fillStyle = stats[s].color;
-            ctx.font = 'bold 11px monospace';
+            ctx.font = 'bold 10px monospace';
             ctx.textAlign = 'right';
             ctx.fillText(stats[s].val, rightX + rightW - 15, sY);
             ctx.textAlign = 'left';
         }
 
-        // 5. Bottom Navigation Toolbar
-        ctx.fillStyle = '#0b1320';
-        ctx.fillRect(0, canvas.height - 35, canvas.width, 35);
+        // --- 6. FOOTER CONTROLS CHEATSHEET ---
+        const footerY = canvas.height - 35;
+        ctx.fillStyle = '#0a101d';
+        ctx.fillRect(0, footerY - 15, canvas.width, 50);
+        ctx.strokeStyle = '#1e293b';
+        ctx.strokeRect(0, footerY - 15, canvas.width, 50);
+
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('◀ [A/D] Entity   ▲ [W/S] Animation   [SPACE] Play/Pause   [J/K] Step Frame   [Z] Zoom   [C] Flip Facing   [ESC] Exit', canvas.width / 2, canvas.height - 13);
+        ctx.fillText('NAVIGATION: [A/D] Select Character  •  [W/S] Animation  •  [ENTER] Equip Skin  •  [SPACE] Pause/Play  •  [Z] Zoom 1x-4x  •  [C] Flip  •  [J/K] Step Frame', canvas.width / 2, footerY + 12);
+    }
+
+    triggerEquipNotification(context, text) {
+        if (context.floaterQueue) {
+            context.floaterQueue.push({
+                text: text,
+                x: 480,
+                y: 120,
+                color: '#22c55e',
+                lifetime: 2.0,
+                maxLifetime: 2.0
+            });
+        }
     }
 
     wrapText(ctx, text, x, y, maxWidth, lineHeight) {
         const words = text.split(' ');
         let line = '';
-        let curY = y;
 
         for (let n = 0; n < words.length; n++) {
             const testLine = line + words[n] + ' ';
             const metrics = ctx.measureText(testLine);
             const testWidth = metrics.width;
             if (testWidth > maxWidth && n > 0) {
-                ctx.fillText(line, x, curY);
+                ctx.fillText(line, x, y);
                 line = words[n] + ' ';
-                curY += lineHeight;
+                y += lineHeight;
             } else {
                 line = testLine;
             }
         }
-        ctx.fillText(line, x, curY);
+        ctx.fillText(line, x, y);
     }
-    
+
     renderFloaters(ctx, dt, context) {
-        if (!context.floaterQueue) context.floaterQueue = [];
-        const frameDt = context._frameDt || (1 / 60);
-        
-        ctx.save();
-        context.camera.apply(ctx);
+        if (!context.floaterQueue || context.floaterQueue.length === 0) return;
         
         for (let i = context.floaterQueue.length - 1; i >= 0; i--) {
-            let f = context.floaterQueue[i];
-            f.lifetime -= frameDt;
-            f.y -= 35 * frameDt;
-            ctx.globalAlpha = Math.max(0, Math.min(1, f.lifetime / (f.maxLifetime || 1.0)));
-            ctx.font = 'bold 13px monospace';
-            ctx.fillStyle = f.color;
-            ctx.textAlign = 'center';
-            ctx.fillText(f.text, f.x, f.y);
-            if (f.lifetime <= 0) {
+            const floater = context.floaterQueue[i];
+            floater.lifetime -= dt;
+            floater.y -= 25 * dt; // Float gently upwards
+            
+            if (floater.lifetime <= 0) {
                 context.floaterQueue.splice(i, 1);
+                continue;
             }
+            
+            const alpha = Math.max(0, floater.lifetime / (floater.maxLifetime || 1.0));
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = floater.color || '#ffffff';
+            ctx.font = 'bold 15px monospace';
+            ctx.textAlign = 'center';
+
+            // Convert world coordinate to screen coordinate if camera is active
+            let screenX = floater.x;
+            let screenY = floater.y;
+            if (context.camera && context.gameStateManager.getState() === GameState.PLAYING) {
+                screenX = floater.x - context.camera.x;
+                screenY = floater.y - context.camera.y;
+            }
+
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 4;
+            ctx.fillText(floater.text, screenX, screenY);
+            ctx.restore();
         }
-        
-        ctx.restore();
     }
 }

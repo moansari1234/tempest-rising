@@ -145,23 +145,6 @@ class Game {
         this.inputManager.consumeAction('viewAssets');
     }
 
-    // Toggle Asset Pack (T) -> 1 (Classic) vs 2 (Arcade HD)
-    if (this.inputManager.isActionJustPressed('togglePack')) {
-        const newPack = this.spriteParser.toggleAssetPack();
-        const packName = newPack === 1 ? 'PACK 1: CLASSIC (DEFAULT)' : 'PACK 2: ARCADE HD';
-        if (this.context.floaterQueue) {
-            this.context.floaterQueue.push({
-                text: `🎨 ACTIVE SKIN: ${packName}`,
-                x: this.camera ? this.camera.x + this.camera.viewportWidth / 2 : 480,
-                y: this.camera ? this.camera.y + 120 : 120,
-                color: newPack === 1 ? '#38bdf8' : '#a855f7',
-                lifetime: 1.8,
-                maxLifetime: 1.8
-            });
-        }
-        this.inputManager.consumeAction('togglePack');
-    }
-
     if (this.inputManager.isActionJustPressed('pause')) {
         if (state === GameState.PLAYING) {
             this.gameStateManager.setState(GameState.PAUSED);

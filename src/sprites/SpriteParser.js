@@ -4,18 +4,18 @@ import { AnimationData } from './AnimationData.js';
 export class SpriteParser {
   constructor() {
     this.cache = new Map(); // "entityId_animationName_frameIndex" -> ImageBitmap
-    this.activePack = parseInt(localStorage.getItem('tempest_asset_pack') || '1', 10);
   }
 
-  setAssetPack(packNum) {
-    this.activePack = packNum === 2 ? 2 : 1;
-    localStorage.setItem('tempest_asset_pack', this.activePack.toString());
-    console.log(`[SpriteParser] Active Asset Pack switched to: ${this.activePack} (${this.activePack === 1 ? 'Classic 1' : 'Arcade HD 2'})`);
+  getSkin(entityKey) {
+    const saved = localStorage.getItem(`tempest_skin_${entityKey}`);
+    return saved ? parseInt(saved, 10) : 1;
   }
 
-  toggleAssetPack() {
-    this.setAssetPack(this.activePack === 1 ? 2 : 1);
-    return this.activePack;
+  setSkin(entityKey, skinIndex) {
+    const index = skinIndex === 2 ? 2 : 1;
+    localStorage.setItem(`tempest_skin_${entityKey}`, index.toString());
+    console.log(`[SpriteParser] Equipped Skin ${index} for entity: ${entityKey}`);
+    return index;
   }
 
   async init() {
@@ -29,7 +29,7 @@ export class SpriteParser {
       }
     }
 
-    // 2. Load PNG sprites for Boss & Goblins
+    // 2. Load PNG sprites for Boss & Goblins (Pack 1)
     const pngEntities = {
       serpent: { idle: 4, run: 4, attack: 4, hurt: 2, death: 4 },
       goblin: { idle: 4, run: 4, attack: 3, hurt: 2, death: 4 },
@@ -56,7 +56,7 @@ export class SpriteParser {
       }
     }
 
-    // 3. Load Rimuru Pack 2 (Arcade HD) and Goblin Archer v2
+    // 3. Load Rimuru Pack 2 (Arcade HD) and Goblin Archer v2 (Pack 2)
     const v2Packs = {
       rimuru_v2: {
         idle: 4, run: 4, jump: 4, attack_light: 4, attack_heavy: 4,
@@ -87,14 +87,14 @@ export class SpriteParser {
       }
     }
 
-    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites (Pack 1 & Pack 2 ready)');
+    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites');
   }
 
-  getBitmap(entityKey, animKey, frameIndex, forcePack = null) {
-    const pack = forcePack !== null ? forcePack : this.activePack;
+  getBitmap(entityKey, animKey, frameIndex, forceSkin = null) {
+    const skin = forceSkin !== null ? forceSkin : this.getSkin(entityKey);
     
-    // Check if Pack 2 requested
-    if (pack === 2) {
+    // Check if Skin 2 requested and available
+    if (skin === 2) {
       if (entityKey === 'rimuru') {
         const v2Key = `rimuru_v2_${animKey}_${frameIndex}`;
         if (this.cache.has(v2Key)) return this.cache.get(v2Key);
