@@ -8,7 +8,11 @@ export const GameState = {
   GAME_OVER: 6,
   LEVEL_TRANSITION: 7,
   ASSETS: 8,
-  STATUS: 9
+  STATUS: 9,
+  PROLOGUE: 10,
+  ZEN: 11,
+  SETTINGS: 12,
+  STAGE_SELECT: 13
 };
 
 export class GameStateManager {

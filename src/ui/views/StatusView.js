@@ -95,7 +95,12 @@ export class StatusView {
         const idCardH = 100;
         this.drawCardFrame(ctx, col1X, idCardY, col1W, idCardH);
 
-        // Header ribbon: "GREAT DEMON LORD"
+        // Dynamic title lookup
+        const activeTitle = (context.titleSystem && context.titleSystem.getActiveTitle) ? 
+            context.titleSystem.getActiveTitle() : 
+            { name: 'Nameless Slime', desc: 'A newly reincarnated, unidentified monster.', bonus: 'None' };
+
+        // Header ribbon: Active Title
         ctx.fillStyle = '#1e3a8a';
         ctx.fillRect(col1X + 8, idCardY + 6, col1W - 16, 18);
         ctx.strokeStyle = '#38bdf8';
@@ -105,7 +110,7 @@ export class StatusView {
         ctx.font = 'bold 10px "Cinzel", monospace';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText('GREAT DEMON LORD', col1X + col1W / 2, idCardY + 19);
+        ctx.fillText(activeTitle.name.toUpperCase(), col1X + col1W / 2, idCardY + 19);
 
         // Name: RIMURU
         ctx.font = '900 24px "Cinzel Decorative", "Cinzel", serif';
@@ -340,7 +345,7 @@ export class StatusView {
         ctx.fillText('TITLE', col2X + col2W / 2, titleCardY + 14);
         ctx.font = 'bold 13px "Cinzel", serif';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText('Great Demon Lord', col2X + col2W / 2, titleCardY + 30);
+        ctx.fillText(activeTitle.name, col2X + col2W / 2, titleCardY + 30);
 
         // Lore Description Box
         const loreY = titleCardY + titleCardH + 8;
@@ -360,7 +365,7 @@ export class StatusView {
         ctx.font = '9px "Marcellus", monospace';
         ctx.fillStyle = '#e2e8f0';
         ctx.textAlign = 'left';
-        wrapText(ctx, 'A slime that gained abilities through countless battles and evolution. Now rules over the Tempest Federation.', col2X + 42, loreY + 16, col2W - 50, 12);
+        wrapText(ctx, activeTitle.desc, col2X + 42, loreY + 16, col2W - 50, 12);
 
         // --- 4. RIGHT COLUMN: ACQUIRED ABILITIES & RESISTANCES (w: 254, x: 638) ---
         const col3X = col2X + col2W + 12;

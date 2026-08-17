@@ -16,6 +16,8 @@ import { LevelManager } from './core/LevelManager.js';
 import { XPSystem } from './core/XPSystem.js';
 import { AudioManager } from './core/AudioManager.js';
 import { GreatSageSystem } from './core/GreatSageSystem.js';
+import { TitleSystem } from './core/TitleSystem.js';
+import { SettingsManager } from './core/SettingsManager.js';
 
 class Game {
   constructor() {
@@ -30,6 +32,8 @@ class Game {
     this.gameStateManager = new GameStateManager();
     this.audio = new AudioManager();
     this.xpSystem = new XPSystem();
+    this.titleSystem = new TitleSystem();
+    this.settingsManager = new SettingsManager();
     this.inputManager = new InputManager();
     this.greatSage = new GreatSageSystem();
     this.camera = new Camera(CONSTANTS.NATIVE_WIDTH, CONSTANTS.NATIVE_HEIGHT);
@@ -63,6 +67,8 @@ class Game {
       levelManager: this.levelManager,
       audio: this.audio,
       xpSystem: this.xpSystem,
+      titleSystem: this.titleSystem,
+      settingsManager: this.settingsManager,
       sage: this.greatSage,
       floaterQueue: [],
       world: this.world,
@@ -121,18 +127,8 @@ class Game {
       this.accumulator -= this.timeStep;
     }
 
-    // Camera updates after physics but before render to track correctly
-    // We pass frameTime for smooth lerping independent of fixed timestep
-    this.camera.update(frameTime);
-
-    // Pass real frame time for animation updates in RenderSystem
-    this.context._frameDt = frameTime;
-
-    // Render happens every animation frame
+    // Render whenever animation frame triggers
     this.render();
-    
-    // Input update happens at the end of the actual frame
-    this.inputManager.update();
 
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -144,7 +140,7 @@ class Game {
     if (this.inputManager.isActionJustPressed('viewAssets')) {
         if (state === GameState.ASSETS) {
             this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
-        } else if (state === GameState.PLAYING || state === GameState.MENU || state === GameState.PAUSED) {
+        } else if (state === GameState.PLAYING || state === GameState.MENU || state === GameState.PAUSED || state === GameState.ZEN) {
             this.gameStateManager.setState(GameState.ASSETS);
         }
         this.inputManager.consumeAction('viewAssets');
@@ -154,29 +150,35 @@ class Game {
     if (this.inputManager.isActionJustPressed('toggleStatus')) {
         if (state === GameState.STATUS) {
             this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
-        } else if (state === GameState.PLAYING || state === GameState.PAUSED) {
+        } else if (state === GameState.PLAYING || state === GameState.PAUSED || state === GameState.ZEN) {
             this.gameStateManager.setState(GameState.STATUS);
         }
         this.inputManager.consumeAction('toggleStatus');
     }
 
     if (this.inputManager.isActionJustPressed('pause')) {
-        if (state === GameState.PLAYING) {
+        if (state === GameState.PLAYING || state === GameState.ZEN) {
             this.gameStateManager.setState(GameState.PAUSED);
-        } else if (state === GameState.PAUSED || state === GameState.STATUS) {
-            this.gameStateManager.setState(GameState.PLAYING);
+        } else if (state === GameState.PAUSED || state === GameState.STATUS || state === GameState.SETTINGS) {
+            this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
         } else if (state === GameState.ASSETS) {
             this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
         }
         this.inputManager.consumeAction('pause');
     }
     
-    if (state === GameState.PAUSED && this.inputManager.isActionJustPressed('quit')) {
-        this.gameStateManager.setState(GameState.MENU);
-        this.inputManager.consumeAction('quit');
+    if (state === GameState.PAUSED) {
+        if (this.inputManager.isActionJustPressed('quit')) {
+            this.gameStateManager.setState(GameState.MENU);
+            this.inputManager.consumeAction('quit');
+        } else if (this.inputManager.keys['s'] || this.inputManager.keys['S']) {
+            this.gameStateManager.setState(GameState.SETTINGS);
+            this.inputManager.keys['s'] = false;
+            this.inputManager.keys['S'] = false;
+        }
     }
 
-    if (state === GameState.PLAYING) {
+    if (state === GameState.PLAYING || state === GameState.ZEN) {
         if (this.context.hitstopTimer > 0) {
             this.context.hitstopTimer -= dt;
             return; 
@@ -190,7 +192,6 @@ class Game {
       this.world.render(this.context);
   }
 }
-
 
 // Start game
 window.onload = () => {

@@ -48,16 +48,19 @@ export class HUDView {
         // Player Name & Title
         const barX = avX + avSize + 10;
         const barW = hudW - avSize - 26;
+        const activeTitle = (context.titleSystem && context.titleSystem.getActiveTitle) ? 
+            context.titleSystem.getActiveTitle() : 
+            { name: 'Nameless Slime' };
         
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 11px monospace';
+        ctx.font = 'bold 11px "Cinzel", monospace';
         ctx.textAlign = 'left';
         ctx.fillText('Rimuru Tempest', barX, hudY + 16);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = '9px monospace';
+        ctx.font = 'bold 9px "Cinzel", monospace';
         ctx.textAlign = 'right';
-        ctx.fillText('Demon Lord Slime', hudX + hudW - 8, hudY + 16);
+        ctx.fillText(activeTitle.name, hudX + hudW - 8, hudY + 16);
 
         if (playerHealth) {
             const currentHp = Math.max(0, playerHealth.hp || 0);

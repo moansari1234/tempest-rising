@@ -71,6 +71,7 @@ export class EnvironmentSystem {
               pHealth.hp = Math.min(pHealth.maxHp, pHealth.hp + prop.hpValue);
             }
             if (xpSystem) xpSystem.awardXP(prop.xpValue, 1.0, context);
+            if (context.titleSystem) context.titleSystem.unlockTitle('cave_explorer', context);
             if (sage) {
               sage.notify(
                 '« REPORT: GREAT SAGE »',
@@ -82,6 +83,7 @@ export class EnvironmentSystem {
           } else if (prop.type === 'magisteel') {
             sprite.currentAnimation = 'break';
             if (xpSystem) xpSystem.awardXP(prop.xpValue, 1.0, context);
+            if (context.titleSystem) context.titleSystem.unlockTitle('cave_explorer', context);
             if (sage) {
               sage.notify(
                 '« REPORT: GREAT SAGE »',

@@ -297,11 +297,15 @@ export class CombatSystem {
       health.alive = false;
       if (targetVelocity) targetVelocity.vx = 0; // Prevent sliding endlessly when dead
       
-      // XP Award
+      // XP & Title Award
       if (!targetInput && combatData && context.xpSystem) {
           const comboStage = hitbox.properties ? hitbox.properties.comboStage : 1;
           const comboMult = CONSTANTS.COMBO_XP_MULTS ? CONSTANTS.COMBO_XP_MULTS[comboStage] || 1.0 : 1.0;
           context.xpSystem.awardXP(combatData.xpValue, comboMult, context);
+
+          if (combatData.xpValue >= 200 && context.titleSystem) {
+              context.titleSystem.unlockTitle('subterranean_predator', context);
+          }
       }
     }
 
@@ -331,16 +335,20 @@ export class CombatSystem {
         targetInput.stateTimer = 0;
     }
 
+    const settings = context.settingsManager || { screenShake: true, hitstop: true };
+
     // Global Hitstop Trigger
-    if (context.hitstopTimer < hitbox.hitstopMs / 1000) {
+    if (settings.hitstop && context.hitstopTimer < hitbox.hitstopMs / 1000) {
         context.hitstopTimer = hitbox.hitstopMs / 1000;
     }
 
     // Screen Shake based on hitstop duration
-    if (hitbox.hitstopMs >= CONSTANTS.HITSTOP_CRITICAL) {
-        camera.shake(CONSTANTS.SCREEN_SHAKE_HEAVY.amp, CONSTANTS.SCREEN_SHAKE_HEAVY.duration * 1000);
-    } else {
-        camera.shake(CONSTANTS.SCREEN_SHAKE_LIGHT.amp, CONSTANTS.SCREEN_SHAKE_LIGHT.duration * 1000);
+    if (settings.screenShake && camera) {
+        if (hitbox.hitstopMs >= CONSTANTS.HITSTOP_CRITICAL) {
+            camera.shake(CONSTANTS.SCREEN_SHAKE_HEAVY.amp, CONSTANTS.SCREEN_SHAKE_HEAVY.duration * 1000);
+        } else {
+            camera.shake(CONSTANTS.SCREEN_SHAKE_LIGHT.amp, CONSTANTS.SCREEN_SHAKE_LIGHT.duration * 1000);
+        }
     }
   }
 }
