@@ -13,7 +13,7 @@ export class UISystem {
         this.assetFrameIdx = 0;
         this.assetFrameTimer = 0;
         this.assetIsPaused = false;
-        this.assetZoom = 1; // Default zoom is strictly 1x
+        this.assetZoom = 1; // Strict 1x default zoom
         this.assetFacing = 'right';
 
         this.entitiesList = [
@@ -366,7 +366,13 @@ export class UISystem {
         const { inputManager, spriteParser } = context;
         if (!inputManager || !spriteParser) return;
 
-        // --- 1. KEYBOARD INPUT PROCESSING ---
+        const currentEntity = this.entitiesList[this.assetEntityIdx];
+        const animList = currentEntity.animations;
+        if (this.assetAnimIdx >= animList.length) {
+            this.assetAnimIdx = 0;
+        }
+
+        // --- 1. KEYBOARD & MOUSE INPUT PROCESSING ---
         // Cycle Selected Entity (A / D or Left / Right)
         if (inputManager.isActionJustPressed('moveRight')) {
             this.assetEntityIdx = (this.assetEntityIdx + 1) % this.entitiesList.length;
@@ -379,9 +385,6 @@ export class UISystem {
             this.assetFrameIdx = 0;
             this.assetFrameTimer = 0;
         }
-
-        const currentEntity = this.entitiesList[this.assetEntityIdx];
-        const animList = currentEntity.animations;
 
         // Cycle Animation Clip (W / S or Up / Down)
         if (inputManager.isActionJustPressed('moveDown')) {
@@ -403,9 +406,7 @@ export class UISystem {
         if (inputManager.isActionJustPressed('interact')) {
             if (currentEntity.forcePack !== null) {
                 spriteParser.setSkin(currentEntity.spriteKey, currentEntity.forcePack);
-                if (context.floaterQueue) {
-                    this.triggerEquipNotification(context, `✨ EQUIPPED: ${currentEntity.name}`);
-                }
+                this.triggerEquipNotification(context, `✨ EQUIPPED: ${currentEntity.name}`);
             }
         }
 
@@ -450,75 +451,94 @@ export class UISystem {
 
         // --- 2. RENDER ASSET LIBRARY UI ---
         // Obsidian Matte Background
-        ctx.fillStyle = '#050911';
+        ctx.fillStyle = '#060B12';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Header Title Bar
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 20px monospace';
+        ctx.font = 'bold 18px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText('🏛 ASSET LIBRARY & SKIN DRESSING ROOM', 25, 34);
+        ctx.fillText('🏛 ASSET LIBRARY & SKIN DRESSING ROOM', 20, 28);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px monospace';
+        ctx.fillText('PREVIEW, INSPECT & EQUIP SKINS', 420, 28);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '12px monospace';
+        ctx.font = 'bold 11px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText('[ESC / V] Return to Game', canvas.width - 25, 34);
+        ctx.fillText('[ESC / V] Exit Gallery', canvas.width - 20, 28);
 
-        // --- 3. LEFT SIDEBAR: ROSTER & SKINS ---
-        const sidebarX = 25;
-        const sidebarY = 50;
-        const sidebarW = 260;
-        const sidebarH = canvas.height - 110;
+        // --- 3. LEFT COLUMN: CHARACTER & SKIN ROSTER (x: 18, w: 230, h: 450) ---
+        const sidebarX = 18;
+        const sidebarY = 42;
+        const sidebarW = 230;
+        const sidebarH = 450;
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
         ctx.fillRect(sidebarX, sidebarY, sidebarW, sidebarH);
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(sidebarX, sidebarY, sidebarW, sidebarH);
 
         ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 11px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText('CHARACTER & ENEMY ROSTER', sidebarX + 14, sidebarY + 22);
+        ctx.fillText('CHARACTER / SKIN ROSTER', sidebarX + 12, sidebarY + 18);
 
         for (let i = 0; i < this.entitiesList.length; i++) {
             const ent = this.entitiesList[i];
-            const itemY = sidebarY + 32 + i * 40;
+            const cardY = sidebarY + 28 + i * 51;
+            const cardH = 44;
             const isSelected = i === this.assetEntityIdx;
             const activeSkin = spriteParser.getSkin(ent.spriteKey);
             const isEquipped = ent.forcePack !== null && ent.forcePack === activeSkin;
 
-            if (isSelected) {
-                ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
-                ctx.fillRect(sidebarX + 8, itemY, sidebarW - 16, 34);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(sidebarX + 8, itemY, sidebarW - 16, 34);
+            // Mouse click support
+            if (inputManager.isClickInRect(sidebarX + 6, cardY, sidebarW - 12, cardH)) {
+                this.assetEntityIdx = i;
+                this.assetAnimIdx = 0;
+                this.assetFrameIdx = 0;
             }
 
-            ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
-            ctx.font = isSelected ? 'bold 12px monospace' : '11px monospace';
+            if (isSelected) {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+                ctx.fillRect(sidebarX + 6, cardY, sidebarW - 12, cardH);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(sidebarX + 6, cardY, sidebarW - 12, cardH);
+
+                // Left highlight bar
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(sidebarX + 6, cardY, 3, cardH);
+            } else if (inputManager.isHoverInRect(sidebarX + 6, cardY, sidebarW - 12, cardH)) {
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+                ctx.fillRect(sidebarX + 6, cardY, sidebarW - 12, cardH);
+            }
+
+            ctx.fillStyle = isSelected ? '#38bdf8' : '#e2e8f0';
+            ctx.font = isSelected ? 'bold 11px monospace' : '11px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(ent.name, sidebarX + 16, itemY + 16);
+            ctx.fillText(ent.name, sidebarX + 16, cardY + 18);
 
             ctx.fillStyle = '#64748b';
             ctx.font = '9px monospace';
-            ctx.fillText(ent.category, sidebarX + 16, itemY + 28);
+            ctx.fillText(ent.category, sidebarX + 16, cardY + 34);
 
             // Active Equipped Tag
             if (isEquipped) {
                 ctx.fillStyle = '#22c55e';
                 ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'right';
-                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 16, itemY + 20);
+                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 14, cardY + 20);
             }
         }
 
-        // --- 4. CENTER STAGE: PREVIEW STUDIO ---
-        const studioX = 300;
-        const studioY = 50;
-        const studioW = 380;
-        const studioH = canvas.height - 110;
+        // --- 4. CENTER COLUMN: PREVIEW STAGE & ALL ANIMATION CLIPS (x: 258, w: 440, h: 450) ---
+        const studioX = 258;
+        const studioY = 42;
+        const studioW = 440;
+        const studioH = 260;
 
         ctx.fillStyle = '#080e1a';
         ctx.fillRect(studioX, studioY, studioW, studioH);
@@ -538,12 +558,12 @@ export class UISystem {
         }
 
         // Center Origin Crosshair & Ground Line
-        const groundLineY = studioY + studioH - 85;
+        const groundLineY = studioY + studioH - 35;
         ctx.strokeStyle = 'rgba(74, 222, 128, 0.45)';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(studioX + 20, groundLineY);
-        ctx.lineTo(studioX + studioW - 20, groundLineY);
+        ctx.moveTo(studioX + 15, groundLineY);
+        ctx.lineTo(studioX + studioW - 15, groundLineY);
         ctx.stroke();
 
         // Render Centered Active Sprite
@@ -590,143 +610,249 @@ export class UISystem {
             ctx.restore();
         }
 
-        // Studio Playback State Badge
+        // Studio Playback State Badge (Top-Left)
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + 12, studioY + 12, 105, 22);
+        ctx.fillRect(studioX + 10, studioY + 10, 95, 20);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + 12, studioY + 12, 105, 22);
+        ctx.strokeRect(studioX + 10, studioY + 10, 95, 20);
         ctx.fillStyle = this.assetIsPaused ? '#f59e0b' : '#10b981';
-        ctx.font = 'bold 10px monospace';
+        ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED' : '▶ PLAYING', studioX + 64, studioY + 26);
+        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED (SPACE)' : '▶ PLAYING (SPACE)', studioX + 57, studioY + 23);
 
-        // Zoom Badge (Shows 1x Default)
+        // Zoom Badge (Top-Right)
+        if (inputManager.isClickInRect(studioX + studioW - 80, studioY + 10, 70, 20)) {
+            this.assetZoom = this.assetZoom >= 4 ? 1 : this.assetZoom + 1;
+        }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + studioW - 88, studioY + 12, 76, 22);
+        ctx.fillRect(studioX + studioW - 80, studioY + 10, 70, 20);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + studioW - 88, studioY + 12, 76, 22);
+        ctx.strokeRect(studioX + studioW - 80, studioY + 10, 70, 20);
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText(`ZOOM: ${this.assetZoom}x (Z)`, studioX + studioW - 50, studioY + 26);
+        ctx.fillText(`ZOOM: ${this.assetZoom}x (Z)`, studioX + studioW - 45, studioY + 23);
 
-        // Frame Ticker Scrubber Bar
+        // Frame Ticker Scrubber Bar (Top-Center)
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px monospace';
+        ctx.font = 'bold 11px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`Frame ${this.assetFrameIdx + 1} / ${totalFrames}   [${currentAnimKey.toUpperCase()}]`, studioX + studioW / 2, groundLineY + 25);
+        ctx.fillText(`[◀ J]  Frame ${this.assetFrameIdx + 1} / ${totalFrames}  [K ▶]`, studioX + studioW / 2, studioY + 23);
 
-        // Animation Clip Pill Bar
-        const pillBarY = groundLineY + 42;
-        const visibleClips = animList.slice(0, 5);
-        for (let k = 0; k < visibleClips.length; k++) {
-            const clip = visibleClips[k];
+        // --- BOTTOM OF CENTER COLUMN: ALL ANIMATION CLIPS MATRIX (y: 310, w: 440, h: 182) ---
+        const matrixY = 310;
+        const matrixH = 182;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(studioX, matrixY, studioW, matrixH);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(studioX, matrixY, studioW, matrixH);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`ALL ANIMATION CLIPS (${animList.length} TOTAL - PRESS W / S OR CLICK)`, studioX + 12, matrixY + 18);
+
+        // Render 2-Column Grid for ALL Animation Clips (Never Truncates!)
+        const clipCols = 2;
+        const btnW = (studioW - 30) / clipCols;
+        const btnH = 22;
+
+        for (let k = 0; k < animList.length; k++) {
+            const clip = animList[k];
+            const col = k % clipCols;
+            const row = Math.floor(k / clipCols);
+            const bX = studioX + 12 + col * (btnW + 6);
+            const bY = matrixY + 26 + row * (btnH + 4);
             const isCSelected = k === this.assetAnimIdx;
-            const pW = 66;
-            const pX = studioX + 16 + k * (pW + 6);
-            
-            ctx.fillStyle = isCSelected ? '#38bdf8' : 'rgba(30, 41, 59, 0.7)';
-            ctx.fillRect(pX, pillBarY, pW, 20);
-            ctx.strokeStyle = isCSelected ? '#0284c7' : '#475569';
-            ctx.strokeRect(pX, pillBarY, pW, 20);
 
-            ctx.fillStyle = isCSelected ? '#0f172a' : '#cbd5e1';
-            ctx.font = isCSelected ? 'bold 9px monospace' : '9px monospace';
-            ctx.fillText(clip.toUpperCase(), pX + pW / 2, pillBarY + 13);
+            // Mouse click to select animation
+            if (inputManager.isClickInRect(bX, bY, btnW, btnH)) {
+                this.assetAnimIdx = k;
+                this.assetFrameIdx = 0;
+                this.assetFrameTimer = 0;
+            }
+
+            if (isCSelected) {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+                ctx.fillRect(bX, bY, btnW, btnH);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(bX, bY, btnW, btnH);
+            } else if (inputManager.isHoverInRect(bX, bY, btnW, btnH)) {
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.6)';
+                ctx.fillRect(bX, bY, btnW, btnH);
+                ctx.strokeStyle = '#475569';
+                ctx.strokeRect(bX, bY, btnW, btnH);
+            } else {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+                ctx.fillRect(bX, bY, btnW, btnH);
+                ctx.strokeStyle = '#334155';
+                ctx.strokeRect(bX, bY, btnW, btnH);
+            }
+
+            // Get frame count for badge
+            const aData = AnimationData[currentEntity.spriteKey] ? AnimationData[currentEntity.spriteKey][clip] : null;
+            const fCount = aData ? aData.frames : 1;
+
+            ctx.fillStyle = isCSelected ? '#38bdf8' : '#e2e8f0';
+            ctx.font = isCSelected ? 'bold 10px monospace' : '10px monospace';
+            ctx.textAlign = 'left';
+            
+            // Format clip label nicely
+            const niceName = this.formatClipName(clip);
+            ctx.fillText(`${isCSelected ? '▶ ' : '  '}${niceName}`, bX + 6, bY + 15);
+
+            // Frame count tag
+            ctx.fillStyle = isCSelected ? '#0284c7' : '#64748b';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(`${fCount}f`, bX + btnW - 6, bY + 15);
         }
 
-        // --- 5. RIGHT SIDEBAR: DOSSIER & EQUIP SELECTION ---
-        const rightX = 695;
-        const rightY = 50;
-        const rightW = canvas.width - rightX - 25;
-        const rightH = canvas.height - 110;
+        // --- 5. RIGHT COLUMN: TECHNICAL DOSSIER & EQUIP BUTTON (x: 708, w: 234, h: 450) ---
+        const rightX = 708;
+        const rightY = 42;
+        const rightW = 234;
+        const rightH = 450;
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
         ctx.fillRect(rightX, rightY, rightW, rightH);
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(rightX, rightY, rightW, rightH);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 15px monospace';
+        ctx.font = 'bold 13px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(currentEntity.name, rightX + 15, rightY + 26);
+        ctx.fillText(currentEntity.name, rightX + 12, rightY + 22);
 
         ctx.fillStyle = '#a855f7';
-        ctx.font = 'bold 11px monospace';
-        ctx.fillText(currentEntity.title, rightX + 15, rightY + 44);
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(currentEntity.title, rightX + 12, rightY + 38);
 
-        // Equip / Active Status Banner
-        const equipBoxY = rightY + 56;
+        // Big Prominent Equip Action Button (y: rightY + 46)
+        const equipBoxY = rightY + 46;
         const activeSkin = spriteParser.getSkin(currentEntity.spriteKey);
         const isCurrentlyEquipped = currentEntity.forcePack !== null && currentEntity.forcePack === activeSkin;
 
         if (currentEntity.forcePack !== null) {
+            // Click to equip
+            if (inputManager.isClickInRect(rightX + 10, equipBoxY, rightW - 20, 36)) {
+                spriteParser.setSkin(currentEntity.spriteKey, currentEntity.forcePack);
+                this.triggerEquipNotification(context, `✨ EQUIPPED: ${currentEntity.name}`);
+            }
+
             if (isCurrentlyEquipped) {
-                ctx.fillStyle = 'rgba(34, 197, 94, 0.18)';
-                ctx.fillRect(rightX + 15, equipBoxY, rightW - 30, 32);
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+                ctx.fillRect(rightX + 10, equipBoxY, rightW - 20, 36);
                 ctx.strokeStyle = '#22c55e';
-                ctx.strokeRect(rightX + 15, equipBoxY, rightW - 30, 32);
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(rightX + 10, equipBoxY, rightW - 20, 36);
 
                 ctx.fillStyle = '#22c55e';
                 ctx.font = 'bold 11px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('✔ CURRENTLY EQUIPPED IN GAME', rightX + rightW / 2, equipBoxY + 20);
+                ctx.fillText('✔ ACTIVE IN GAME', rightX + rightW / 2, equipBoxY + 22);
             } else {
-                ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
-                ctx.fillRect(rightX + 15, equipBoxY, rightW - 30, 32);
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+                ctx.fillRect(rightX + 10, equipBoxY, rightW - 20, 36);
                 ctx.strokeStyle = '#38bdf8';
-                ctx.strokeRect(rightX + 15, equipBoxY, rightW - 30, 32);
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(rightX + 10, equipBoxY, rightW - 20, 36);
 
                 ctx.fillStyle = '#38bdf8';
-                ctx.font = 'bold 11px monospace';
+                ctx.font = 'bold 10px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('[PRESS ENTER TO EQUIP SKIN]', rightX + rightW / 2, equipBoxY + 20);
+                ctx.fillText('⚡ EQUIP SKIN (ENTER)', rightX + rightW / 2, equipBoxY + 22);
             }
         }
 
         // Lore Description Box
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '10px monospace';
+        ctx.font = '9px monospace';
         ctx.textAlign = 'left';
-        this.wrapText(ctx, currentEntity.lore, rightX + 15, rightY + 106, rightW - 30, 15);
+        this.wrapText(ctx, currentEntity.lore, rightX + 12, rightY + 98, rightW - 24, 14);
 
-        // Combat Attributes Section
-        const statsBoxY = rightY + 185;
+        // Combat Attributes Section (y: rightY + 180)
+        const statsBoxY = rightY + 175;
         ctx.fillStyle = '#64748b';
         ctx.font = 'bold 10px monospace';
-        ctx.fillText('COMBAT PROFILE', rightX + 15, statsBoxY);
+        ctx.fillText('COMBAT ATTRIBUTES', rightX + 12, statsBoxY);
 
         const stats = [
             { label: 'HEALTH POOL', val: currentEntity.hp, color: '#22c55e' },
             { label: 'ATTACK POWER', val: currentEntity.atk, color: '#ef4444' },
             { label: 'DEFENSE RATING', val: currentEntity.def, color: '#3b82f6' },
-            { label: 'MOVEMENT SPEED', val: currentEntity.speed, color: '#f59e0b' },
-            { label: 'SPRITE RESOLUTION', val: bitmap ? `${bitmap.width}x${bitmap.height} px` : 'N/A', color: '#38bdf8' }
+            { label: 'MOVEMENT SPEED', val: currentEntity.speed, color: '#f59e0b' }
         ];
 
         for (let s = 0; s < stats.length; s++) {
-            const sY = statsBoxY + 16 + s * 22;
+            const sY = statsBoxY + 16 + s * 20;
             ctx.fillStyle = '#94a3b8';
-            ctx.font = '10px monospace';
-            ctx.fillText(stats[s].label, rightX + 15, sY);
+            ctx.font = '9px monospace';
+            ctx.fillText(stats[s].label, rightX + 12, sY);
 
             ctx.fillStyle = stats[s].color;
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'right';
-            ctx.fillText(stats[s].val, rightX + rightW - 15, sY);
+            ctx.fillText(stats[s].val, rightX + rightW - 12, sY);
             ctx.textAlign = 'left';
         }
 
-        // --- 6. FOOTER CONTROLS CHEATSHEET ---
-        const footerY = canvas.height - 35;
-        ctx.fillStyle = '#0a101d';
-        ctx.fillRect(0, footerY - 15, canvas.width, 50);
+        // Technical Asset Specifications (y: rightY + 280)
+        const techBoxY = rightY + 275;
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('SPRITE HARDWARE SPECS', rightX + 12, techBoxY);
+
+        const specs = [
+            { label: 'ACTIVE CLIP', val: currentAnimKey.toUpperCase() },
+            { label: 'FRAME SIZE', val: bitmap ? `${bitmap.width}x${bitmap.height} px` : 'N/A' },
+            { label: 'TOTAL FRAMES', val: `${totalFrames} frames` },
+            { label: 'FRAME INTERVAL', val: `${Math.round((entityAnimData ? entityAnimData.frameTime : 0.15) * 1000)} ms` }
+        ];
+
+        for (let t = 0; t < specs.length; t++) {
+            const tY = techBoxY + 16 + t * 20;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '9px monospace';
+            ctx.fillText(specs[t].label, rightX + 12, tY);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(specs[t].val, rightX + rightW - 12, tY);
+            ctx.textAlign = 'left';
+        }
+
+        // --- 6. FOOTER CONTROLS CHEATSHEET (y: 502, h: 32) ---
+        const footerY = 502;
+        ctx.fillStyle = '#080e1a';
+        ctx.fillRect(0, footerY, canvas.width, 38);
         ctx.strokeStyle = '#1e293b';
-        ctx.strokeRect(0, footerY - 15, canvas.width, 50);
+        ctx.strokeRect(0, footerY, canvas.width, 38);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '11px monospace';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('NAVIGATION: [A/D] Select Character  •  [W/S] Animation  •  [ENTER] Equip Skin  •  [SPACE] Pause/Play  •  [Z] Zoom 1x-4x  •  [C] Flip  •  [J/K] Step Frame', canvas.width / 2, footerY + 12);
+        ctx.fillText('CONTROLS: [A/D] Select Asset • [W/S] Select Animation • [ENTER] Equip Skin • [SPACE] Pause • [Z] Zoom • [C] Flip • [J/K] Step Frame • [ESC/V] Exit', canvas.width / 2, footerY + 22);
+    }
+
+    formatClipName(clipKey) {
+        const map = {
+            idle: 'IDLE',
+            walk: 'WALK',
+            run: 'RUN / BOUNCE',
+            jump: 'JUMP',
+            attack_light: 'LIGHT ATK (WATER CUTTER)',
+            attack_heavy: 'HEAVY ATK (HAMMER)',
+            special: 'GLUTTONY BARRIER',
+            predator: 'PREDATOR DEVOUR',
+            hurt: 'HURT / FLINCH',
+            death: 'DEFEAT DISSOLUTION',
+            victory: 'VICTORY CELEBRATION',
+            ground: 'GROUND ARCHITECTURE'
+        };
+        return map[clipKey] || clipKey.toUpperCase();
     }
 
     triggerEquipNotification(context, text) {

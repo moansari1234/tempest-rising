@@ -30,8 +30,32 @@ export class InputManager {
     // Store timing for input buffering
     this.inputTimestamps = {};
 
+    // Mouse tracking
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.mouseClicked = false;
+    this.previousMouseClicked = false;
+
     window.addEventListener('keydown', this.onKeyDown.bind(this));
     window.addEventListener('keyup', this.onKeyUp.bind(this));
+    
+    window.addEventListener('mousemove', (e) => {
+      const canvas = document.getElementById('gameCanvas');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      this.mouseX = (e.clientX - rect.left) * scaleX;
+      this.mouseY = (e.clientY - rect.top) * scaleY;
+    });
+
+    window.addEventListener('mousedown', (e) => {
+      this.mouseClicked = true;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      this.mouseClicked = false;
+    });
   }
 
   onKeyDown(e) {
@@ -44,9 +68,21 @@ export class InputManager {
   }
 
   update() {
-    // Copy current state to previous state at the end of the frame
-    // This allows checking for just-pressed or just-released keys
     this.previousKeys = { ...this.keys };
+    this.previousMouseClicked = this.mouseClicked;
+  }
+
+  isJustClicked() {
+    return this.mouseClicked && !this.previousMouseClicked;
+  }
+
+  isClickInRect(x, y, w, h) {
+    if (!this.isJustClicked()) return false;
+    return this.mouseX >= x && this.mouseX <= x + w && this.mouseY >= y && this.mouseY <= y + h;
+  }
+
+  isHoverInRect(x, y, w, h) {
+    return this.mouseX >= x && this.mouseX <= x + w && this.mouseY >= y && this.mouseY <= y + h;
   }
 
   // Check if any key mapped to an action is currently held down
