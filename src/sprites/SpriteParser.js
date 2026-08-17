@@ -91,6 +91,8 @@ export class SpriteParser {
           } catch (e) {}
         }
       }
+    }
+
     // 4. Load Environment Modular Tiles
     const tileNames = [
       'ground_left', 'ground_mid', 'ground_right', 'rock_core',
