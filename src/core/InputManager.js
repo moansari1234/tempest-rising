@@ -22,6 +22,7 @@ export class InputManager {
       'quit': ['q', 'Q'],
       'interact': ['Enter', 'e', 'E'],
       'viewAssets': ['v', 'V'],
+      'togglePack': ['t', 'T'],
       'stepBack': ['j', 'J', '['],
       'stepForward': ['k', 'K', ']']
     };

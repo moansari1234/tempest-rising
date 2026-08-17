@@ -227,6 +227,9 @@ export class RenderSystem {
                   displayW = bitmap.width * 2;
                   displayH = bitmap.height * 2;
               }
+          } else if (sprite.spriteKey === 'rimuru' && bitmap.width >= 50) {
+              displayW = bitmap.width * 0.38;
+              displayH = bitmap.height * 0.38;
           } else if (bitmap.width >= 64) {
               displayW = bitmap.width * 0.5; // High-res sheet fallback
               displayH = bitmap.height * 0.5;

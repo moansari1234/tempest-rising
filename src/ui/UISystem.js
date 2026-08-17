@@ -18,17 +18,33 @@ export class UISystem {
 
         this.entitiesList = [
             {
-                id: 'rimuru',
+                id: 'rimuru_pack1',
                 spriteKey: 'rimuru',
-                name: 'Rimuru Tempest',
-                category: 'Player / Protagonist',
+                name: 'Rimuru (Pack 1 - Classic)',
+                category: 'Player (Default)',
                 title: 'Great Demon Lord / Predator Slime',
-                lore: 'A sentient azure slime gifted with Predator and Great Sage abilities. Attacks with high-speed water blade whips and absorbs defeated foes to gain power.',
+                lore: 'The original hand-crafted 16x16 / 32x16 pixel art slime with crescent water slashes, hydro hammer, and gluttony parry barrier.',
                 hp: '100 - 300',
                 atk: '10 - 45',
                 def: '8 - 25',
                 speed: '200 px/s',
                 animations: ['idle', 'walk', 'run', 'jump', 'attack_light', 'attack_heavy', 'special', 'predator', 'hurt', 'death', 'victory'],
+                forcePack: 1,
+                tint: null
+            },
+            {
+                id: 'rimuru_pack2',
+                spriteKey: 'rimuru',
+                name: 'Rimuru (Pack 2 - HD Arcade)',
+                category: 'Player (Remastered)',
+                title: 'High-Res Gelatinous Predator',
+                lore: 'Remastered high-resolution arcade pixel art with elastic squash-and-stretch bounce, large crescent scythe slashes, anvil hammer, and vortex vacuum.',
+                hp: '100 - 300',
+                atk: '10 - 45',
+                def: '8 - 25',
+                speed: '200 px/s',
+                animations: ['idle', 'run', 'jump', 'attack_light', 'attack_heavy', 'special', 'predator', 'hurt', 'death', 'victory'],
+                forcePack: 2,
                 tint: null
             },
             {
@@ -138,28 +154,33 @@ export class UISystem {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 36px monospace';
+        ctx.font = 'bold 34px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('TENSEI SLIME: TEMPEST RISING', canvas.width / 2, canvas.height / 3 - 20);
+        ctx.fillText('TENSEI SLIME: TEMPEST RISING', canvas.width / 2, canvas.height / 3 - 25);
         
-        ctx.font = '18px monospace';
+        ctx.font = '17px monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText('[START GAME] (Press Z)', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('[START GAME] (Press Z)', canvas.width / 2, canvas.height / 2 - 10);
         
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText('[ASSETS GALLERY] (Press V)', canvas.width / 2, canvas.height / 2 + 40);
+        ctx.fillText('[ASSETS GALLERY] (Press V)', canvas.width / 2, canvas.height / 2 + 25);
+
+        // Active Theme Pack Indicator in Menu
+        const activePack = context.spriteParser ? context.spriteParser.activePack : 1;
+        ctx.fillStyle = activePack === 1 ? '#38bdf8' : '#a855f7';
+        ctx.fillText(`[SKIN PACK: ${activePack === 1 ? '1 (Classic - Default)' : '2 (Arcade HD)'}] (Press T to Toggle)`, canvas.width / 2, canvas.height / 2 + 60);
 
         if (localStorage.getItem('tempest_save_boss_defeated') === 'true') {
             ctx.fillStyle = '#22c55e';
-            ctx.fillText('[CONTINUE] (Press C)', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.fillText('[CONTINUE] (Press C)', canvas.width / 2, canvas.height / 2 + 95);
         } else {
             ctx.fillStyle = '#475569';
-            ctx.fillText('[CONTINUE] (Locked)', canvas.width / 2, canvas.height / 2 + 80);
+            ctx.fillText('[CONTINUE] (Locked)', canvas.width / 2, canvas.height / 2 + 95);
         }
         
         ctx.font = '12px monospace';
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText('Controls: WASD / Arrows to Move • Space to Jump • Z/X to Attack • C to Parry • E to Devour • Shift to Dash', canvas.width / 2, canvas.height - 35);
+        ctx.fillText('Controls: WASD / Arrows to Move • Space to Jump • Z/X to Attack • C to Parry • E to Devour • Shift to Dash • T to Swap Skin', canvas.width / 2, canvas.height - 30);
         
         // Handle input to start game or open gallery
         if (context.inputManager.isActionJustPressed('attackLight')) {
@@ -514,7 +535,7 @@ export class UISystem {
         ctx.stroke();
 
         // Render Centered Active Sprite
-        const bitmap = spriteParser.getBitmap(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx);
+        const bitmap = spriteParser.getBitmap(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, currentEntity.forcePack || null);
         if (bitmap) {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
