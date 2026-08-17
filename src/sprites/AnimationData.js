@@ -1,6 +1,6 @@
 export const AnimationData = {
   rimuru: {
-    idle: { frameTime: 0.18, frames: 4, loop: true },
+    idle: { frameTime: 0.30, frames: 4, loop: true },
     walk: { frameTime: 0.14, frames: 4, loop: true },
     run: { frameTime: 0.09, frames: 4, loop: true },
     jump: { frameTime: 0.12, frames: 4, loop: false },
@@ -13,21 +13,21 @@ export const AnimationData = {
     special: { frameTime: 0.15, frames: 2, loop: true }
   },
   goblin: {
-    idle: { frameTime: 0.25, frames: 4, loop: true },
+    idle: { frameTime: 0.30, frames: 4, loop: true },
     run: { frameTime: 0.12, frames: 4, loop: true },
     attack: { frameTime: 0.14, frames: 4, loop: false },
     hurt: { frameTime: 0.12, frames: 2, loop: false },
     death: { frameTime: 0.18, frames: 4, loop: false }
   },
   serpent: {
-    idle: { frameTime: 0.22, frames: 4, loop: true },
+    idle: { frameTime: 0.32, frames: 4, loop: true },
     run: { frameTime: 0.14, frames: 4, loop: true },
     attack: { frameTime: 0.16, frames: 4, loop: false },
     hurt: { frameTime: 0.15, frames: 2, loop: false },
     death: { frameTime: 0.20, frames: 4, loop: false }
   },
   goblin_archer: {
-    idle: { frameTime: 0.22, frames: 4, loop: true },
+    idle: { frameTime: 0.30, frames: 4, loop: true },
     run: { frameTime: 0.12, frames: 4, loop: true },
     attack: { frameTime: 0.15, frames: 4, loop: false },
     hurt: { frameTime: 0.12, frames: 2, loop: false },
