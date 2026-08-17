@@ -132,7 +132,7 @@ export class LevelDesigner {
           const spawnX = (currentX + 2 + i * 3) * this.tileSize;
           const spawnY = (floorRow - 1) * this.tileSize;
           enemySpawns.push({
-            type: playerStats.level >= 3 && i === 0 ? 'goblin_brawler' : 'goblin',
+            type: 'goblin',
             x: spawnX,
             y: spawnY
           });

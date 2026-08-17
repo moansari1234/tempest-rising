@@ -47,8 +47,6 @@ export class LevelManager {
     for (const spawn of this.currentLevelData.spawns) {
       if (spawn.type === 'goblin') {
         createGoblin(world, spawn.x, spawn.y);
-      } else if (spawn.type === 'goblin_brawler') {
-        createGoblinBrawler(world, spawn.x, spawn.y);
       } else if (spawn.type === 'goblin_archer') {
         createGoblinArcher(world, spawn.x, spawn.y);
       } else if (spawn.type === 'boss_serpent') {

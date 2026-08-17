@@ -91,9 +91,58 @@ export class SpriteParser {
           } catch (e) {}
         }
       }
+    // 4. Load Environment Modular Tiles
+    const tileNames = [
+      'ground_left', 'ground_mid', 'ground_right', 'rock_core',
+      'plat_left', 'plat_mid', 'plat_right', 'bridge',
+      'wall_left', 'wall_right', 'ceiling', 'underhang',
+      'slope_up', 'slope_down', 'pillar_top', 'pillar_base'
+    ];
+
+    for (const tName of tileNames) {
+      const pngPath = `/public/sprites/tiles/${tName}.png`;
+      try {
+        const img = new Image();
+        img.src = pngPath;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+        if (img.complete && img.naturalWidth > 0) {
+          const bitmap = await createImageBitmap(img);
+          this.cache.set(`tiles_${tName}_0`, bitmap);
+        }
+      } catch (e) {}
     }
 
-    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites');
+    // 5. Load Environment Interactive Props
+    const propAnims = {
+      magisteel: { idle: 4, break: 4 },
+      hipokute: { bloom: 4 },
+      monolith: { activate: 4 }
+    };
+
+    for (const [propKey, anims] of Object.entries(propAnims)) {
+      for (const [animKey, frameCount] of Object.entries(anims)) {
+        for (let i = 0; i < frameCount; i++) {
+          const pngPath = `/public/sprites/props/${propKey}_${animKey}_${i}.png`;
+          try {
+            const img = new Image();
+            img.src = pngPath;
+            await new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            });
+            if (img.complete && img.naturalWidth > 0) {
+              const bitmap = await createImageBitmap(img);
+              this.cache.set(`${propKey}_${animKey}_${i}`, bitmap);
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites (Characters & Environment)');
   }
 
   getBitmap(entityKey, animKey, frameIndex, forceSkin = null) {

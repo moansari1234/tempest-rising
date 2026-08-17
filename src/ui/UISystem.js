@@ -108,21 +108,6 @@ export class UISystem {
                 tint: null
             },
             {
-                id: 'goblin_brawler',
-                spriteKey: 'goblin',
-                name: 'Goblin Brawler',
-                category: 'Elite Marauder',
-                title: 'Armored Heavy Brute',
-                lore: 'A hulking, battle-hardened goblin encased in reinforced armor. Boasts super-armor poise, heavy knockback resistance, and bone-crushing slams.',
-                hp: '75',
-                atk: '14',
-                def: '6',
-                speed: '90 px/s',
-                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
-                forcePack: null,
-                tint: 'rgba(239, 68, 68, 0.35)'
-            },
-            {
                 id: 'serpent_pack1',
                 spriteKey: 'serpent',
                 name: 'Tempest Serpent (Pack 1)',
@@ -153,17 +138,62 @@ export class UISystem {
                 tint: null
             },
             {
-                id: 'tiles',
+                id: 'tiles_moss',
                 spriteKey: 'tiles',
-                name: 'Dungeon Architecture',
-                category: 'Environment',
-                title: 'Ancient Moss Stone & Portals',
-                lore: 'Modular 16x16 moss-crested dungeon masonry with beveled rock edges and illuminated dimensional warp gateways.',
+                name: 'Ancient Cavern Tileset',
+                category: 'Environment Tiles',
+                title: 'Modular Moss-Stone & Scaffolding',
+                lore: 'Modular 16-bit ancient masonry overgrown with lush emerald moss, floating wood-and-moss ledges, subterranean rope bridges, vertical crags, and ionic pillars.',
                 hp: 'Solid',
                 atk: 'N/A',
                 def: 'Infinite',
                 speed: 'Static',
-                animations: ['ground'],
+                animations: ['ground_mid', 'ground_left', 'ground_right', 'plat_mid', 'plat_left', 'plat_right', 'bridge', 'wall_left', 'wall_right', 'ceiling', 'underhang', 'slope_up', 'slope_down', 'pillar_top', 'pillar_base'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'magisteel_ore',
+                spriteKey: 'magisteel',
+                name: 'Magisteel Ore Deposit',
+                category: 'Breakable Mineral',
+                title: 'Luminescent Mana Crystal Vein',
+                lore: 'High-purity magical ore cluster charged with raw magicules. Pulses with radiant cyan energy and shatters into sparkling mineral shards when harvested.',
+                hp: '15 (Breakable)',
+                atk: '0',
+                def: '5',
+                speed: 'Static',
+                animations: ['idle', 'break'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'hipokute_herb',
+                spriteKey: 'hipokute',
+                name: 'Hipokute Healing Lotus',
+                category: 'Magical Flora',
+                title: 'Subterranean Herb of Restoration',
+                lore: 'A rare subterranean flora blooming with vibrant violet petals and restorative healing motes. Used by Rimuru to brew high-potency recovery potions.',
+                hp: 'Flora',
+                atk: 'Heal +50 HP',
+                def: '0',
+                speed: 'Sway',
+                animations: ['bloom'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'runic_monolith',
+                spriteKey: 'monolith',
+                name: 'Ancient Runic Monolith',
+                category: 'Runic Relic',
+                title: 'Sanctuary Gate Pillar',
+                lore: 'A carved stone obelisk engraved with ancient dwarven/dragon runes. Ignites with celestial light and a levitating runic halo to reveal hidden chambers.',
+                hp: 'Indestructible',
+                atk: 'Mana Surge',
+                def: 'Infinite',
+                speed: 'Static',
+                animations: ['activate'],
                 forcePack: null,
                 tint: null
             }
@@ -516,10 +546,12 @@ export class UISystem {
         ctx.textAlign = 'left';
         ctx.fillText('CHARACTER / SKIN ROSTER', sidebarX + 12, sidebarY + 18);
 
+        const cardSpacing = Math.min(48, Math.floor((sidebarH - 35) / this.entitiesList.length));
+        const cardH = cardSpacing - 4;
+
         for (let i = 0; i < this.entitiesList.length; i++) {
             const ent = this.entitiesList[i];
-            const cardY = sidebarY + 28 + i * 51;
-            const cardH = 44;
+            const cardY = sidebarY + 28 + i * cardSpacing;
             const isSelected = i === this.assetEntityIdx;
             const activeSkin = spriteParser.getSkin(ent.spriteKey);
             const isEquipped = ent.forcePack !== null && ent.forcePack === activeSkin;
@@ -547,20 +579,20 @@ export class UISystem {
             }
 
             ctx.fillStyle = isSelected ? '#38bdf8' : '#e2e8f0';
-            ctx.font = isSelected ? 'bold 11px monospace' : '11px monospace';
+            ctx.font = isSelected ? 'bold 10px monospace' : '10px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(ent.name, sidebarX + 16, cardY + 18);
+            ctx.fillText(ent.name, sidebarX + 16, cardY + Math.floor(cardH * 0.45));
 
             ctx.fillStyle = '#64748b';
-            ctx.font = '9px monospace';
-            ctx.fillText(ent.category, sidebarX + 16, cardY + 34);
+            ctx.font = '8px monospace';
+            ctx.fillText(ent.category, sidebarX + 16, cardY + Math.floor(cardH * 0.82));
 
             // Active Equipped Tag
             if (isEquipped) {
                 ctx.fillStyle = '#22c55e';
-                ctx.font = 'bold 9px monospace';
+                ctx.font = 'bold 8px monospace';
                 ctx.textAlign = 'right';
-                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 14, cardY + 20);
+                ctx.fillText('✔ ACTIVE', sidebarX + sidebarW - 12, cardY + Math.floor(cardH * 0.5));
             }
         }
 

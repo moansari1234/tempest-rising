@@ -32,5 +32,32 @@ export const AnimationData = {
     attack: { frameTime: 0.15, frames: 4, loop: false },
     hurt: { frameTime: 0.12, frames: 2, loop: false },
     death: { frameTime: 0.18, frames: 4, loop: false }
+  },
+  magisteel: {
+    idle: { frameTime: 0.22, frames: 4, loop: true },
+    break: { frameTime: 0.14, frames: 4, loop: false }
+  },
+  hipokute: {
+    bloom: { frameTime: 0.22, frames: 4, loop: true }
+  },
+  monolith: {
+    activate: { frameTime: 0.22, frames: 4, loop: true }
+  },
+  tiles: {
+    ground_mid: { frameTime: 1.0, frames: 1, loop: true },
+    ground_left: { frameTime: 1.0, frames: 1, loop: true },
+    ground_right: { frameTime: 1.0, frames: 1, loop: true },
+    plat_mid: { frameTime: 1.0, frames: 1, loop: true },
+    plat_left: { frameTime: 1.0, frames: 1, loop: true },
+    plat_right: { frameTime: 1.0, frames: 1, loop: true },
+    bridge: { frameTime: 1.0, frames: 1, loop: true },
+    wall_left: { frameTime: 1.0, frames: 1, loop: true },
+    wall_right: { frameTime: 1.0, frames: 1, loop: true },
+    ceiling: { frameTime: 1.0, frames: 1, loop: true },
+    underhang: { frameTime: 1.0, frames: 1, loop: true },
+    slope_up: { frameTime: 1.0, frames: 1, loop: true },
+    slope_down: { frameTime: 1.0, frames: 1, loop: true },
+    pillar_top: { frameTime: 1.0, frames: 1, loop: true },
+    pillar_base: { frameTime: 1.0, frames: 1, loop: true }
   }
 };
