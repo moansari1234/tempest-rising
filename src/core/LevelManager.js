@@ -2,6 +2,19 @@ import { CONSTANTS } from '../data/constants.js';
 import { Levels } from '../data/levels.js';
 import { LevelDesigner } from '../level_gen/LevelDesigner.js';
 import { createGoblin, createGoblinBrawler, createGoblinArcher } from '../prefabs/GoblinPrefab.js';
+import {
+  createMagisteelOre,
+  createHipokuteHerb,
+  createTreasureChest,
+  createClayUrn,
+  createDragonTorch,
+  createCampfire,
+  createRunicMonolith,
+  createFloorSpikes,
+  createCeilingStalactite,
+  createSporeShroom,
+  createAcidVent
+} from '../prefabs/PropPrefab.js';
 
 export class LevelManager {
   constructor() {
@@ -19,14 +32,13 @@ export class LevelManager {
   loadLevel(levelKey, playerStats = { level: 1, atk: 10, def: 8, maxHp: 100 }) {
     let levelData = null;
 
-    if (typeof levelKey === 'string' && levelKey.startsWith('stage_')) {
-      const idx = parseInt(levelKey.replace('stage_', ''), 10) || 1;
-      this.currentStageIndex = idx;
-      levelData = this.designer.generateStage(idx, playerStats);
-    } else if (Levels[levelKey]) {
+    if (Levels[levelKey]) {
       levelData = Levels[levelKey];
     } else {
-      // Default to procedural level generation
+      const match = levelKey.match(/stage_(\d+)/);
+      if (match) {
+        this.currentStageIndex = parseInt(match[1], 10);
+      }
       levelData = this.designer.generateStage(this.currentStageIndex, playerStats);
     }
 
@@ -53,6 +65,28 @@ export class LevelManager {
         import('../prefabs/BossPrefab.js').then(module => {
           module.createTempestSerpent(world, spawn.x, spawn.y);
         }).catch(() => {});
+      } else if (spawn.type === 'magisteel') {
+        createMagisteelOre(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'hipokute') {
+        createHipokuteHerb(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'chest') {
+        createTreasureChest(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'urn') {
+        createClayUrn(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'torch') {
+        createDragonTorch(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'campfire') {
+        createCampfire(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'monolith') {
+        createRunicMonolith(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'spikes') {
+        createFloorSpikes(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'stalactite') {
+        createCeilingStalactite(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'spore_shroom') {
+        createSporeShroom(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'acid_vent') {
+        createAcidVent(world, spawn.x, spawn.y);
       }
     }
   }
@@ -125,51 +159,77 @@ export class LevelManager {
   render(ctx, camera, spriteParser) {
     if (!this.currentLevel) return;
 
-    const tileBitmap = spriteParser.getBitmap('tiles', 'ground', 0);
-    if (!tileBitmap) return;
-
     // Viewport culling bounds
     const startCol = Math.max(0, Math.floor(camera.x / this.tileSize));
     const endCol = Math.min(this.width - 1, startCol + Math.floor(camera.viewportWidth / (camera.zoom || 1.0) / this.tileSize) + 2);
     const startRow = Math.max(0, Math.floor(camera.y / this.tileSize));
     const endRow = Math.min(this.height - 1, startRow + Math.floor(camera.viewportHeight / (camera.zoom || 1.0) / this.tileSize) + 2);
 
+    const now = performance.now();
+    const portalFrame = Math.floor(now / 150) % 4;
+
     for (let r = startRow; r <= endRow; r++) {
       for (let c = startCol; c <= endCol; c++) {
         const tile = this.currentLevel[r][c];
         if (tile === '#') {
-          ctx.drawImage(
-            tileBitmap,
-            c * this.tileSize,
-            r * this.tileSize,
-            this.tileSize,
-            this.tileSize
-          );
-        } else if (tile === '>' || tile === '<') {
-          // Render glowing portal exit gateway
-          ctx.save();
-          const now = performance.now();
-          const pulse = Math.sin(now / 150) * 0.3 + 0.7;
-          
-          ctx.fillStyle = `rgba(56, 189, 248, ${0.35 * pulse})`;
-          ctx.fillRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
-          
-          ctx.strokeStyle = `rgba(165, 243, 252, ${pulse})`;
-          ctx.lineWidth = 2;
-          ctx.strokeRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          // --- Intelligent 16-Bit Autotiling ---
+          const up = r > 0 ? this.currentLevel[r - 1][c] === '#' : false;
+          const down = r < this.height - 1 ? this.currentLevel[r + 1][c] === '#' : false;
+          const left = c > 0 ? this.currentLevel[r][c - 1] === '#' : false;
+          const right = c < this.width - 1 ? this.currentLevel[r][c + 1] === '#' : false;
 
-          // Swirling portal center icon
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(
-            c * this.tileSize + this.tileSize / 2, 
-            r * this.tileSize + this.tileSize / 2, 
-            4 + Math.sin(now / 100) * 2, 
-            0, 
-            Math.PI * 2
-          );
-          ctx.fill();
-          ctx.restore();
+          let tileKey = 'tiles_ground_mid_0';
+
+          if (!up && !down) {
+            // Floating 1-tile ledge
+            if (!left) tileKey = 'tiles_plat_left_0';
+            else if (!right) tileKey = 'tiles_plat_right_0';
+            else tileKey = 'tiles_plat_mid_0';
+          } else if (!up && down) {
+            // Top ground surface with lush moss
+            if (!left) tileKey = 'tiles_ground_left_0';
+            else if (!right) tileKey = 'tiles_ground_right_0';
+            else tileKey = 'tiles_ground_mid_0';
+          } else if (up && !down) {
+            // Hanging cavern ceiling
+            tileKey = 'tiles_ceiling_0';
+          } else if (up && down) {
+            // Deep core or vertical wall
+            if (!left) tileKey = 'tiles_wall_left_0';
+            else if (!right) tileKey = 'tiles_wall_right_0';
+            else tileKey = 'tiles_rock_core_0';
+          }
+
+          const bmp = spriteParser.cache.get(tileKey) || spriteParser.getBitmap('tiles', 'ground', 0);
+          if (bmp) {
+            ctx.drawImage(bmp, c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          }
+        } else if (tile === '>' || tile === '<') {
+          // --- Render Dimensional Dragon Warp Gate ---
+          const portalBmp = spriteParser.cache.get(`portal_idle_${portalFrame}`) || spriteParser.cache.get(`portal_activate_${portalFrame}`);
+          if (portalBmp) {
+            ctx.save();
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 12;
+            ctx.drawImage(
+              portalBmp,
+              c * this.tileSize - 8,
+              (r - 1) * this.tileSize,
+              this.tileSize + 16,
+              this.tileSize * 2
+            );
+            ctx.restore();
+          } else {
+            // Fallback glowing gateway
+            ctx.save();
+            const pulse = Math.sin(now / 150) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(56, 189, 248, ${0.4 * pulse})`;
+            ctx.fillRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+            ctx.strokeStyle = `rgba(165, 243, 252, ${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+            ctx.restore();
+          }
         }
       }
     }

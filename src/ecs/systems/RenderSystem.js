@@ -422,6 +422,32 @@ export class RenderSystem {
         }
     }
 
+    // Render In-World Prompts for Interactive Props (Chests, Herbs, Ore, Monoliths, Campfires)
+    const props = world.queryEntities([Transform, InteractiveProp]);
+    for (const pId of props) {
+      const prop = world.getComponent(pId, InteractiveProp);
+      const trans = world.getComponent(pId, Transform);
+      if (prop.inRange && !prop.used && prop.prompt) {
+        const pulse = Math.sin(performance.now() / 160) * 0.25 + 0.75;
+        const badgeX = trans.x + trans.width / 2;
+        const badgeY = trans.y - 14;
+        const textWidth = prop.prompt.length * 7 + 16;
+        
+        ctx.save();
+        ctx.fillStyle = 'rgba(10, 15, 26, 0.9)';
+        ctx.fillRect(badgeX - textWidth / 2, badgeY - 11, textWidth, 16);
+        ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(badgeX - textWidth / 2, badgeY - 11, textWidth, 16);
+        
+        ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(prop.prompt, badgeX, badgeY + 1);
+        ctx.restore();
+      }
+    }
+
     ctx.restore(); // Restore to Screen Space
     // All further UI is handled by UISystem
   }

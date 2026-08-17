@@ -5,13 +5,14 @@ import { GameStateManager, GameState } from './core/GameStateManager.js';
 import { World } from './ecs/World.js';
 import { Transform } from './ecs/Components.js';
 import { PhysicsSystem } from './ecs/systems/PhysicsSystem.js';
-import { RenderSystem } from './ecs/systems/RenderSystem.js';
-import { CombatSystem } from './ecs/systems/CombatSystem.js';
 import { AISystem } from './ecs/systems/AISystem.js';
+import { CombatSystem } from './ecs/systems/CombatSystem.js';
+import { EnvironmentSystem } from './ecs/systems/EnvironmentSystem.js';
+import { RenderSystem } from './ecs/systems/RenderSystem.js';
+import { UISystem } from './ui/UISystem.js';
 import { SpriteParser } from './sprites/SpriteParser.js';
 import { createPlayer } from './prefabs/PlayerPrefab.js';
 import { LevelManager } from './core/LevelManager.js';
-import { UISystem } from './ui/UISystem.js';
 import { XPSystem } from './core/XPSystem.js';
 import { AudioManager } from './core/AudioManager.js';
 import { GreatSageSystem } from './core/GreatSageSystem.js';
@@ -47,6 +48,7 @@ class Game {
     this.world.registerSystem(new PhysicsSystem());
     this.world.registerSystem(new AISystem());
     this.world.registerSystem(new CombatSystem());
+    this.world.registerSystem(new EnvironmentSystem());
     this.world.registerSystem(new RenderSystem());
     this.world.registerSystem(new UISystem());
 

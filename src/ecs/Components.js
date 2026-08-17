@@ -121,3 +121,28 @@ export class AI {
     this.patrolRange = 100;
   }
 }
+
+export class InteractiveProp {
+  constructor(type = 'chest', prompt = '[E] INTERACT', range = 48, xpValue = 30, hpValue = 0) {
+    this.type = type; // 'magisteel', 'hipokute', 'chest', 'urn', 'monolith', 'torch', 'campfire', 'portal'
+    this.prompt = prompt;
+    this.range = range;
+    this.xpValue = xpValue;
+    this.hpValue = hpValue;
+    this.used = false;
+    this.state = 'idle'; // idle, open, break, bloom, activate, burn
+    this.animTimer = 0;
+  }
+}
+
+export class Hazard {
+  constructor(type = 'spikes', damage = 15, triggerRange = 40) {
+    this.type = type; // 'spikes', 'stalactite', 'spore_shroom', 'acid_vent'
+    this.damage = damage;
+    this.triggerRange = triggerRange;
+    this.triggered = false;
+    this.timer = 0;
+    this.cooldown = 0;
+  }
+}
+
