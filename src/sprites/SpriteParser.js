@@ -7,7 +7,7 @@ export class SpriteParser {
   }
 
   async init() {
-    // Parse all defined SpriteMaps into crisp ImageBitmaps
+    // 1. Parse procedural SpriteMaps
     for (const [entityKey, animations] of Object.entries(SpriteMaps)) {
       for (const [animKey, frames] of Object.entries(animations)) {
         for (let i = 0; i < frames.length; i++) {
@@ -16,6 +16,34 @@ export class SpriteParser {
         }
       }
     }
+
+    // 2. Load high-res pixel art PNG sprites for Tempest Serpent Boss
+    const serpentAnims = {
+      idle: 4,
+      run: 4,
+      attack: 4,
+      hurt: 2,
+      death: 4
+    };
+
+    for (const [animKey, frameCount] of Object.entries(serpentAnims)) {
+      for (let i = 0; i < frameCount; i++) {
+        const pngPath = `/public/sprites/serpent/${animKey}_${i}.png`;
+        try {
+          const img = new Image();
+          img.src = pngPath;
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+          if (img.complete && img.naturalWidth > 0) {
+            const bitmap = await createImageBitmap(img);
+            this.cache.set(`serpent_${animKey}_${i}`, bitmap);
+          }
+        } catch (e) {}
+      }
+    }
+
     console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites');
   }
 

@@ -505,9 +505,9 @@ export class UISystem {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
 
-            const scale = this.assetZoom;
-            const dispW = bitmap.width * scale;
-            const dispH = bitmap.height * scale;
+            const baseScale = bitmap.width > 150 ? 0.3 * (this.assetZoom / 4) : (this.assetZoom);
+            const dispW = bitmap.width * baseScale;
+            const dispH = bitmap.height * baseScale;
 
             const centerX = studioX + studioW / 2;
             const drawX = centerX - dispW / 2;
