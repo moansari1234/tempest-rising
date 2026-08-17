@@ -40,7 +40,7 @@ export class InputManager {
     window.addEventListener('keyup', this.onKeyUp.bind(this));
     
     const updateMousePos = (e) => {
-      const canvas = document.getElementById('gameCanvas');
+      const canvas = document.getElementById('game-canvas') || document.querySelector('canvas');
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
