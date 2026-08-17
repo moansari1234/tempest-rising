@@ -93,29 +93,8 @@ export class SpriteParser {
       }
     }
 
-    // 4. Load Environment Modular Tiles
-    const tileNames = [
-      'ground_left', 'ground_mid', 'ground_right', 'rock_core',
-      'plat_left', 'plat_mid', 'plat_right', 'bridge',
-      'wall_left', 'wall_right', 'ceiling', 'underhang',
-      'slope_up', 'slope_down', 'pillar_top', 'pillar_base'
-    ];
-
-    for (const tName of tileNames) {
-      const pngPath = `/public/sprites/tiles/${tName}.png`;
-      try {
-        const img = new Image();
-        img.src = pngPath;
-        await new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-        if (img.complete && img.naturalWidth > 0) {
-          const bitmap = await createImageBitmap(img);
-          this.cache.set(`tiles_${tName}_0`, bitmap);
-        }
-      } catch (e) {}
-    }
+    // 4. Load Environment Modular Tiles (Procedural Pixel-Perfect 32x32 Tiles)
+    await this.generateModularTileBitmaps();
 
     // 5. Load Environment Interactive Props
     const propAnims = {
@@ -240,7 +219,46 @@ export class SpriteParser {
       }
     }
 
-    return this.cache.get(`${entityKey}_${animKey}_${frameIndex}`);
+    const directKey = `${entityKey}_${animKey}_${frameIndex}`;
+    if (this.cache.has(directKey)) return this.cache.get(directKey);
+
+    // Fallback aliases for props/hazards
+    if (entityKey === 'hipokute') {
+      return this.cache.get(`hipokute_bloom_${frameIndex % 4}`) || this.cache.get('hipokute_bloom_0');
+    }
+    if (entityKey === 'monolith') {
+      return this.cache.get(`monolith_activate_${frameIndex % 4}`) || this.cache.get('monolith_activate_0');
+    }
+    if (entityKey === 'chest') {
+      return this.cache.get(`chest_open_${frameIndex % 4}`) || this.cache.get('chest_open_0');
+    }
+    if (entityKey === 'urn') {
+      return this.cache.get(`urn_break_${frameIndex % 4}`) || this.cache.get('urn_break_0');
+    }
+    if (entityKey === 'torch') {
+      return this.cache.get(`torch_burn_${frameIndex % 4}`) || this.cache.get('torch_burn_0');
+    }
+    if (entityKey === 'campfire') {
+      return this.cache.get(`campfire_burn_${frameIndex % 4}`) || this.cache.get('campfire_burn_0');
+    }
+    if (entityKey === 'spikes') {
+      return this.cache.get(`spikes_trigger_${frameIndex % 4}`) || this.cache.get('spikes_trigger_0');
+    }
+    if (entityKey === 'stalactite') {
+      return this.cache.get(`stalactite_drop_${frameIndex % 4}`) || this.cache.get('stalactite_drop_0');
+    }
+    if (entityKey === 'spore_shroom') {
+      return this.cache.get(`spore_shroom_spore_${frameIndex % 4}`) || this.cache.get('spore_shroom_spore_0');
+    }
+    if (entityKey === 'acid_vent') {
+      return this.cache.get(`acid_vent_bubble_${frameIndex % 4}`) || this.cache.get('acid_vent_bubble_0');
+    }
+    if (entityKey === 'portal') {
+      return this.cache.get(`portal_idle_${frameIndex % 4}`) || this.cache.get('portal_idle_0');
+    }
+
+    // Default frame 0 fallback
+    return this.cache.get(`${entityKey}_${animKey}_0`) || this.cache.get(`${entityKey}_idle_0`);
   }
 
   async parseFrame(frameArray) {
@@ -269,5 +287,216 @@ export class SpriteParser {
     
     // Create an ImageBitmap from the canvas (fast, hardware-accelerated for rendering)
     return await createImageBitmap(canvas);
+  }
+
+  async generateModularTileBitmaps() {
+    const size = 32;
+
+    const makeCanvas = (drawFn) => {
+      const cvs = document.createElement('canvas');
+      cvs.width = size;
+      cvs.height = size;
+      const ctx = cvs.getContext('2d');
+      drawFn(ctx, size);
+      return createImageBitmap(cvs);
+    };
+
+    // Helper stone brick backdrop
+    const drawStoneBase = (ctx) => {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, size, size);
+
+      // Stone brick lines
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 16, size, 2);
+      ctx.fillRect(16, 0, 2, 16);
+      ctx.fillRect(8, 18, 2, 14);
+
+      // Highlight bevels
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(0, 0, size, 1);
+      ctx.fillRect(0, 17, size, 1);
+
+      // Dark shadow mortar
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 15, size, 1);
+      ctx.fillRect(0, 31, size, 1);
+    };
+
+    // 1. Ground Mid (Top surface moss + stone base)
+    this.cache.set('tiles_ground_mid_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      // Lush green moss carpet
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(0, 0, size, 7);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(0, 0, size, 5);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 0, size, 3);
+      ctx.fillStyle = '#86efac';
+      for (let x = 1; x < size; x += 3) ctx.fillRect(x, 0, 1, 2);
+      // Hanging moss teeth
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(4, 7, 3, 3);
+      ctx.fillRect(14, 7, 2, 4);
+      ctx.fillRect(24, 7, 3, 3);
+    }));
+
+    // 2. Ground Left (Cliff edge left + moss corner)
+    this.cache.set('tiles_ground_left_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(0, 0, size, 5);
+      ctx.fillRect(0, 0, 5, 14); // Curve down left edge
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(1, 0, size - 1, 3);
+      ctx.fillRect(0, 1, 3, 12);
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(0, 0, 3, 3);
+      // Hanging vine
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(1, 14, 2, 6);
+      ctx.fillRect(2, 20, 2, 4);
+    }));
+
+    // 3. Ground Right (Cliff edge right + moss corner)
+    this.cache.set('tiles_ground_right_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(0, 0, size, 5);
+      ctx.fillRect(size - 5, 0, 5, 14);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 0, size - 1, 3);
+      ctx.fillRect(size - 3, 1, 3, 12);
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(size - 3, 0, 3, 3);
+      // Hanging vine
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(size - 3, 14, 2, 6);
+      ctx.fillRect(size - 4, 20, 2, 4);
+    }));
+
+    // 4. Platform Mid (Floating moss ledge)
+    this.cache.set('tiles_plat_mid_0', await makeCanvas((ctx) => {
+      // Stone bridge slab
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, size, 14);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 12, size, 3);
+      // Moss top
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(0, 0, size, 5);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 0, size, 3);
+      ctx.fillStyle = '#86efac';
+      for (let x = 2; x < size; x += 4) ctx.fillRect(x, 0, 1, 2);
+      // Hanging roots
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(6, 14, 2, 6);
+      ctx.fillRect(20, 14, 2, 8);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(12, 14, 2, 5);
+    }));
+
+    // 5. Platform Left (Floating ledge left rounded bracket)
+    this.cache.set('tiles_plat_left_0', await makeCanvas((ctx) => {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(2, 0, size - 2, 14);
+      ctx.fillRect(0, 2, 2, 10);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(2, 12, size - 2, 3);
+      // Moss cap
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(2, 0, size - 2, 5);
+      ctx.fillRect(0, 1, 3, 4);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(1, 0, size - 1, 3);
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(1, 0, 2, 2);
+      // Supporting corner bracket
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(2, 14, 4, 4);
+      ctx.fillRect(6, 14, 2, 2);
+    }));
+
+    // 6. Platform Right (Floating ledge right rounded bracket)
+    this.cache.set('tiles_plat_right_0', await makeCanvas((ctx) => {
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, size - 2, 14);
+      ctx.fillRect(size - 2, 2, 2, 10);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 12, size - 2, 3);
+      // Moss cap
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(0, 0, size - 2, 5);
+      ctx.fillRect(size - 3, 1, 3, 4);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, 0, size - 1, 3);
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(size - 3, 0, 2, 2);
+      // Supporting corner bracket
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(size - 6, 14, 4, 4);
+      ctx.fillRect(size - 8, 14, 2, 2);
+    }));
+
+    // 7. Rock Core (Deep underground solid stone with magicule mineral flecks)
+    this.cache.set('tiles_rock_core_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      // Glowing blue magicule specks
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(6, 6, 2, 2);
+      ctx.fillRect(22, 22, 2, 2);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(7, 7, 1, 1);
+      ctx.fillRect(23, 23, 1, 1);
+    }));
+
+    // 8. Wall Left (Vertical left cavern border)
+    this.cache.set('tiles_wall_left_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      // Right edge vertical shadow
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(size - 2, 0, 2, size);
+      // Moss patches on face
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(size - 5, 8, 3, 10);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(size - 4, 10, 2, 6);
+    }));
+
+    // 9. Wall Right (Vertical right cavern border)
+    this.cache.set('tiles_wall_right_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, 2, size);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(2, 8, 3, 10);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(2, 10, 2, 6);
+    }));
+
+    // 10. Ceiling (Hanging cavern stalactites and roots)
+    this.cache.set('tiles_ceiling_0', await makeCanvas((ctx) => {
+      drawStoneBase(ctx);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 26, size, 6);
+      // Hanging rock stalactite spikes
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.moveTo(4, 26);
+      ctx.lineTo(8, 32);
+      ctx.lineTo(12, 26);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(18, 26);
+      ctx.lineTo(24, 32);
+      ctx.lineTo(30, 26);
+      ctx.fill();
+      // Hanging green moss/roots
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(13, 26, 2, 5);
+      ctx.fillRect(16, 26, 1, 4);
+    }));
   }
 }

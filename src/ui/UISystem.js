@@ -640,47 +640,48 @@ export class UISystem {
         const msg = current.message.slice(0, context.sage.typewriterIndex || 0);
         const pulse = Math.sin(performance.now() / 200) * 0.2 + 0.8;
 
-        const popW = Math.min(520, canvas.width - 40);
-        const popH = 82;
-        const popX = (canvas.width - popW) / 2;
-        const popY = canvas.height - 110;
+        // Position at top center/right to completely avoid blocking gameplay
+        const popW = Math.min(460, canvas.width - 320);
+        const popH = 62;
+        const popX = canvas.width - popW - 20;
+        const popY = 50; // Directly below stage indicator, leaving bottom 90% of screen 100% free
 
         ctx.save();
         // Dark Obsidian & Celestial Backdrop
-        ctx.fillStyle = 'rgba(6, 11, 20, 0.96)';
+        ctx.fillStyle = 'rgba(6, 11, 20, 0.95)';
         ctx.fillRect(popX, popY, popW, popH);
 
         // Golden Ethereal Glow Border
         ctx.strokeStyle = `rgba(245, 158, 11, ${pulse})`;
-        ctx.lineWidth = 1.8;
+        ctx.lineWidth = 1.6;
         ctx.strokeRect(popX, popY, popW, popH);
 
         // Anime Corner Accents
         ctx.fillStyle = '#f59e0b';
-        ctx.fillRect(popX - 2, popY - 2, 8, 3);
-        ctx.fillRect(popX - 2, popY - 2, 3, 8);
-        ctx.fillRect(popX + popW - 6, popY - 2, 8, 3);
-        ctx.fillRect(popX + popW - 1, popY - 2, 3, 8);
+        ctx.fillRect(popX - 1, popY - 1, 6, 2);
+        ctx.fillRect(popX - 1, popY - 1, 2, 6);
+        ctx.fillRect(popX + popW - 5, popY - 1, 6, 2);
+        ctx.fillRect(popX + popW - 1, popY - 1, 2, 6);
 
         // Header Title
         ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 11px monospace';
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(current.title, popX + 16, popY + 20);
+        ctx.fillText(current.title, popX + 12, popY + 16);
 
         // Horizontal Pulse Line
         ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(popX + 16, popY + 26);
-        ctx.lineTo(popX + popW - 16, popY + 26);
+        ctx.moveTo(popX + 12, popY + 22);
+        ctx.lineTo(popX + popW - 12, popY + 22);
         ctx.stroke();
 
         // Message Body (Typewritten)
         ctx.fillStyle = '#e0f2fe';
-        ctx.font = '11px monospace';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'left';
-        this.wrapText(ctx, msg, popX + 16, popY + 44, popW - 32, 16);
+        this.wrapText(ctx, msg, popX + 12, popY + 36, popW - 24, 14);
 
         ctx.restore();
     }

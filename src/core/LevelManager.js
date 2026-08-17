@@ -173,31 +173,41 @@ export class LevelManager {
         const tile = this.currentLevel[r][c];
         if (tile === '#') {
           // --- Intelligent 16-Bit Autotiling ---
-          const up = r > 0 ? this.currentLevel[r - 1][c] === '#' : false;
-          const down = r < this.height - 1 ? this.currentLevel[r + 1][c] === '#' : false;
-          const left = c > 0 ? this.currentLevel[r][c - 1] === '#' : false;
-          const right = c < this.width - 1 ? this.currentLevel[r][c + 1] === '#' : false;
-
           let tileKey = 'tiles_ground_mid_0';
 
-          if (!up && !down) {
-            // Floating 1-tile ledge
-            if (!left) tileKey = 'tiles_plat_left_0';
-            else if (!right) tileKey = 'tiles_plat_right_0';
-            else tileKey = 'tiles_plat_mid_0';
-          } else if (!up && down) {
-            // Top ground surface with lush moss
-            if (!left) tileKey = 'tiles_ground_left_0';
-            else if (!right) tileKey = 'tiles_ground_right_0';
-            else tileKey = 'tiles_ground_mid_0';
-          } else if (up && !down) {
-            // Hanging cavern ceiling
+          if (r === 0) {
             tileKey = 'tiles_ceiling_0';
-          } else if (up && down) {
-            // Deep core or vertical wall
-            if (!left) tileKey = 'tiles_wall_left_0';
-            else if (!right) tileKey = 'tiles_wall_right_0';
-            else tileKey = 'tiles_rock_core_0';
+          } else if (r >= 16) {
+            tileKey = 'tiles_rock_core_0';
+          } else if (c === 0) {
+            tileKey = 'tiles_wall_left_0';
+          } else if (c === this.width - 1) {
+            tileKey = 'tiles_wall_right_0';
+          } else {
+            const up = r > 0 ? this.currentLevel[r - 1][c] === '#' : false;
+            const down = r < this.height - 1 ? this.currentLevel[r + 1][c] === '#' : false;
+            const left = c > 0 ? this.currentLevel[r][c - 1] === '#' : false;
+            const right = c < this.width - 1 ? this.currentLevel[r][c + 1] === '#' : false;
+
+            if (!up && !down) {
+              // Floating 1-tile ledge
+              if (!left) tileKey = 'tiles_plat_left_0';
+              else if (!right) tileKey = 'tiles_plat_right_0';
+              else tileKey = 'tiles_plat_mid_0';
+            } else if (!up && down) {
+              // Top ground surface with lush moss
+              if (!left) tileKey = 'tiles_ground_left_0';
+              else if (!right) tileKey = 'tiles_ground_right_0';
+              else tileKey = 'tiles_ground_mid_0';
+            } else if (up && !down) {
+              // Hanging cavern ceiling
+              tileKey = 'tiles_ceiling_0';
+            } else if (up && down) {
+              // Deep core or vertical wall
+              if (!left) tileKey = 'tiles_wall_left_0';
+              else if (!right) tileKey = 'tiles_wall_right_0';
+              else tileKey = 'tiles_rock_core_0';
+            }
           }
 
           const bmp = spriteParser.cache.get(tileKey) || spriteParser.getBitmap('tiles', 'ground', 0);

@@ -38,9 +38,11 @@ export const AnimationData = {
     break: { frameTime: 0.14, frames: 4, loop: false }
   },
   hipokute: {
+    idle: { frameTime: 0.22, frames: 4, loop: true },
     bloom: { frameTime: 0.22, frames: 4, loop: true }
   },
   monolith: {
+    idle: { frameTime: 0.22, frames: 4, loop: true },
     activate: { frameTime: 0.22, frames: 4, loop: true }
   },
   portal: {
@@ -48,28 +50,38 @@ export const AnimationData = {
     activate: { frameTime: 0.18, frames: 4, loop: false }
   },
   chest: {
+    idle: { frameTime: 0.20, frames: 1, loop: true },
     open: { frameTime: 0.18, frames: 4, loop: false }
   },
   urn: {
+    idle: { frameTime: 0.20, frames: 1, loop: true },
     break: { frameTime: 0.12, frames: 4, loop: false }
   },
   torch: {
+    idle: { frameTime: 0.15, frames: 4, loop: true },
     burn: { frameTime: 0.15, frames: 4, loop: true }
   },
   campfire: {
+    idle: { frameTime: 0.16, frames: 4, loop: true },
     burn: { frameTime: 0.16, frames: 4, loop: true }
   },
   spikes: {
+    idle: { frameTime: 0.20, frames: 1, loop: true },
     trigger: { frameTime: 0.16, frames: 4, loop: true }
   },
   stalactite: {
+    idle: { frameTime: 0.20, frames: 1, loop: true },
     drop: { frameTime: 0.18, frames: 4, loop: false }
   },
   spore_shroom: {
-    spore: { frameTime: 0.16, frames: 4, loop: true }
+    idle: { frameTime: 0.20, frames: 1, loop: true },
+    spore: { frameTime: 0.16, frames: 4, loop: true },
+    trigger: { frameTime: 0.16, frames: 4, loop: true }
   },
   acid_vent: {
-    bubble: { frameTime: 0.16, frames: 4, loop: true }
+    idle: { frameTime: 0.16, frames: 4, loop: true },
+    bubble: { frameTime: 0.16, frames: 4, loop: true },
+    trigger: { frameTime: 0.16, frames: 4, loop: true }
   },
   tiles: {
     ground_mid: { frameTime: 1.0, frames: 1, loop: true },

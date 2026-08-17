@@ -254,7 +254,15 @@ export class RenderSystem {
           
           // Calculate integer-scaled display dimensions
           let displayW, displayH;
-          if (sprite.spriteKey === 'serpent' || sprite.spriteKey === 'boss_serpent') {
+          const isPropOrHazard = [
+            'magisteel', 'hipokute', 'monolith', 'portal', 'chest', 'urn', 
+            'torch', 'campfire', 'spikes', 'stalactite', 'spore_shroom', 'acid_vent'
+          ].includes(sprite.spriteKey);
+
+          if (isPropOrHazard) {
+            displayW = transform.width;
+            displayH = transform.height;
+          } else if (sprite.spriteKey === 'serpent' || sprite.spriteKey === 'boss_serpent') {
               if (bitmap.width >= 100) {
                   displayW = bitmap.width * 0.6;
                   displayH = bitmap.height * 0.6;
@@ -281,8 +289,8 @@ export class RenderSystem {
               displayH = bitmap.height * 2;
           }
           
-          let drawX = transform.x + transform.width / 2 - displayW / 2;
-          const drawY = transform.y + transform.height - displayH;
+          let drawX = isPropOrHazard ? transform.x : (transform.x + transform.width / 2 - displayW / 2);
+          let drawY = isPropOrHazard ? transform.y : (transform.y + transform.height - displayH);
           
           if (sprite.spriteKey === 'rimuru' && bitmap.width > 16) {
               // Wide attack slash sprite: anchor slime body at transform.x
@@ -296,7 +304,7 @@ export class RenderSystem {
               }
           } else {
               // Standard centered sprite
-              if (transform.facing === 'left') {
+              if (transform.facing === 'left' && !isPropOrHazard) {
                   ctx.translate(drawX + displayW, drawY);
                   ctx.scale(-1, 1);
                   ctx.drawImage(bitmap, 0, 0, displayW, displayH);
