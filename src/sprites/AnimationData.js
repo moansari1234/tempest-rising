@@ -1,6 +1,6 @@
 export const AnimationData = {
   rimuru: {
-    idle: { frameTime: 0.30, frames: 4, loop: true },
+    idle: { frameTime: 0.48, frames: 4, loop: true },
     walk: { frameTime: 0.14, frames: 4, loop: true },
     run: { frameTime: 0.09, frames: 4, loop: true },
     jump: { frameTime: 0.12, frames: 4, loop: false },

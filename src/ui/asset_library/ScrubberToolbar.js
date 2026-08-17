@@ -18,22 +18,35 @@ export class ScrubberToolbar {
         ctx.textAlign = 'center';
         ctx.fillText(state.assetIsPaused ? '⏸ PAUSE' : '▶ PLAY', studioX + 39, studioY + 22);
 
-        // 2. Playback Speed Button [⏱️ 1.0x] (Click to Cycle Clip Speed)
+        // 2. Playback Speed Button [⏱️ 1.00x] (Click to Set Custom Speed / Cycle)
         const activeClipSpeed = spriteParser.getClipSpeed(currentEntity.spriteKey, currentAnimKey);
         if (inputManager.isClickInRect(studioX + 74, studioY + 8, 54, 22)) {
-            const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-            const curIdx = speeds.indexOf(activeClipSpeed);
-            const nextIdx = (curIdx + 1) % speeds.length;
-            const newSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
-            spriteParser.setClipSpeed(currentEntity.spriteKey, currentAnimKey, newSpeed);
-            state.toastMsg = `⏱️ [${currentAnimKey.toUpperCase()}] Speed: ${newSpeed.toFixed(2)}x (Saved)`;
-            state.toastTimer = 2.0;
+            try {
+                const val = prompt(`Enter Speed Multiplier for [${currentAnimKey.toUpperCase()}]\n(0.01 to 5.00, e.g. 0.35, 0.48, 0.70, 1.00):`, activeClipSpeed.toFixed(2));
+                if (val !== null) {
+                    const parsed = parseFloat(val);
+                    if (!isNaN(parsed) && parsed > 0.005 && parsed <= 5.0) {
+                        const newSpeed = Math.round(parsed * 100) / 100;
+                        spriteParser.setClipSpeed(currentEntity.spriteKey, currentAnimKey, newSpeed);
+                        state.toastMsg = `⏱️ [${currentAnimKey.toUpperCase()}] Speed: ${newSpeed.toFixed(2)}x (Saved)`;
+                        state.toastTimer = 2.0;
+                    }
+                }
+            } catch(e) {
+                const speeds = [0.25, 0.35, 0.50, 0.75, 1.00, 1.25, 1.50];
+                const curIdx = speeds.indexOf(activeClipSpeed);
+                const nextIdx = (curIdx + 1) % speeds.length;
+                const newSpeed = speeds[nextIdx >= 0 ? nextIdx : 4];
+                spriteParser.setClipSpeed(currentEntity.spriteKey, currentAnimKey, newSpeed);
+                state.toastMsg = `⏱️ [${currentAnimKey.toUpperCase()}] Speed: ${newSpeed.toFixed(2)}x (Saved)`;
+                state.toastTimer = 2.0;
+            }
         }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.fillRect(studioX + 74, studioY + 8, 54, 22);
-        ctx.strokeStyle = activeClipSpeed !== 1.0 ? '#a855f7' : '#475569';
+        ctx.strokeStyle = activeClipSpeed !== 1.0 ? '#facc15' : '#475569';
         ctx.strokeRect(studioX + 74, studioY + 8, 54, 22);
-        ctx.fillStyle = activeClipSpeed !== 1.0 ? '#c084fc' : '#38bdf8';
+        ctx.fillStyle = activeClipSpeed !== 1.0 ? '#fde047' : '#38bdf8';
         ctx.font = 'bold 8px monospace';
         ctx.fillText(`⏱️ ${activeClipSpeed.toFixed(2)}x`, studioX + 101, studioY + 22);
 
