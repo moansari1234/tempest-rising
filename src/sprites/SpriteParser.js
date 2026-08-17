@@ -9,11 +9,17 @@ export class SpriteParser {
   }
 
   loadLocks() {
+    const defaultLocks = {
+      goblin_archer_idle_f0: true,
+      goblin_archer_idle_f1: true,
+      goblin_archer_idle_f2: true,
+      goblin_archer_idle_f3: true
+    };
     try {
       const saved = localStorage.getItem('tempest_sprite_locks');
-      if (saved) return JSON.parse(saved);
+      if (saved) return { ...defaultLocks, ...JSON.parse(saved) };
     } catch (e) {}
-    return {};
+    return defaultLocks;
   }
 
   saveLocks() {
@@ -56,14 +62,15 @@ export class SpriteParser {
   }
 
   loadOffsets() {
-    try {
-      const saved = localStorage.getItem('tempest_sprite_offsets');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return {
+    const defaults = {
       rimuru: { offsetX: 0, offsetY: 0, scale: 1.0 },
       goblin: { offsetX: 0, offsetY: 0, scale: 1.0 },
       goblin_archer: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      // Calibrated Frame-Level Offsets for Goblin Sharpshooter (Pack 1)
+      goblin_archer_idle_f0: { offsetX: -2, offsetY: 0, scale: 1.0 },
+      goblin_archer_idle_f1: { offsetX: 16, offsetY: 0, scale: 1.0 },
+      goblin_archer_idle_f2: { offsetX: 23, offsetY: 0, scale: 1.0 },
+      goblin_archer_idle_f3: { offsetX: 27, offsetY: 0, scale: 1.0 },
       serpent: { offsetX: 0, offsetY: 0, scale: 1.0 },
       magisteel: { offsetX: 0, offsetY: 0, scale: 1.0 },
       hipokute: { offsetX: 0, offsetY: 0, scale: 1.0 },
@@ -78,6 +85,13 @@ export class SpriteParser {
       spore_shroom: { offsetX: 0, offsetY: 0, scale: 1.0 },
       acid_vent: { offsetX: 0, offsetY: 0, scale: 1.0 }
     };
+    try {
+      const saved = localStorage.getItem('tempest_sprite_offsets');
+      if (saved) {
+        return { ...defaults, ...JSON.parse(saved) };
+      }
+    } catch (e) {}
+    return defaults;
   }
 
   saveOffsets() {
