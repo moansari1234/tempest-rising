@@ -35,7 +35,7 @@ class Game {
     this.camera = new Camera(CONSTANTS.NATIVE_WIDTH, CONSTANTS.NATIVE_HEIGHT);
     
     this.levelManager = new LevelManager();
-    this.levelManager.loadLevel('chapter1_intro');
+    this.levelManager.loadLevel('chapter1');
     
     this.camera.setLevelBounds(this.levelManager.width * this.levelManager.tileSize, this.levelManager.height * this.levelManager.tileSize);
 
@@ -94,9 +94,9 @@ class Game {
     // Create Player using Prefab
     const playerId = createPlayer(this.world, 80, 420);
 
-    // Load intelligent procedural stage 1
+    // Load Epic Linear Level 1: Whispering Caverns (175 tiles)
     const playerStats = { level: 1, atk: 10, def: 8, maxHp: 100 };
-    this.levelManager.loadLevel('stage_1', playerStats);
+    this.levelManager.loadLevel('chapter1', playerStats);
     this.camera.setLevelBounds(this.levelManager.width * this.levelManager.tileSize, this.levelManager.height * this.levelManager.tileSize);
     this.levelManager.spawnLevelEntities(this.world);
 

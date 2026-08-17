@@ -209,13 +209,14 @@ export class AISystem {
           if (ai.state === 'idle') {
               ai.stateTimer -= dt;
               velocity.vx = 0;
-              if (ai.stateTimer <= 0) {
+              if (distToPlayer <= AGGRO_RANGE && ai.stateTimer <= 0) {
                   ai.state = 'chase';
               }
           } else if (ai.state === 'chase') {
-              if (!playerTransform || !playerHealth.alive) {
+              if (!playerTransform || !playerHealth.alive || distToPlayer > AGGRO_RANGE * 1.5) {
                   ai.state = 'idle';
                   ai.stateTimer = 1.0;
+                  velocity.vx = 0;
               } else {
                   // Move towards player
                   if (playerTransform.x > transform.x) {
