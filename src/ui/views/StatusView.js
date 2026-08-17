@@ -4,33 +4,23 @@ import { wrapText } from '../components/UIUtils.js';
 
 export class StatusView {
     constructor() {
-        this.slimeAnimFrame = 0;
-        this.slimeAnimTimer = 0;
-        this.magicCircleRot = 0;
+        // Serene, static presentation matching reference artwork
     }
 
     render(ctx, canvas, world, playerHealth, context, dt) {
         const { inputManager, gameStateManager, spriteParser, xpSystem } = context;
-        const frameDt = dt || 0.016;
-
-        this.slimeAnimTimer += frameDt;
-        if (this.slimeAnimTimer >= 0.45) {
-            this.slimeAnimTimer = 0;
-            this.slimeAnimFrame = (this.slimeAnimFrame + 1) % 4;
-        }
-        this.magicCircleRot += frameDt * 0.4;
 
         // Dark dimming backdrop
-        ctx.fillStyle = 'rgba(2, 4, 8, 0.85)';
+        ctx.fillStyle = 'rgba(2, 4, 8, 0.88)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // --- 1. OUTER ORNATE GOLD & OBSIDIAN FRAME (w: 860, h: 480, x: 50, y: 30) ---
+        // --- 1. OUTER ORNATE GOLD & OBSIDIAN FRAME (w: 860, h: 492, x: 50, y: 24) ---
         const winX = 50;
         const winY = 24;
         const winW = 860;
         const winH = 492;
 
-        // Slate background
+        // Dark midnight slate background
         ctx.fillStyle = '#060B14';
         ctx.fillRect(winX, winY, winW, winH);
 
@@ -96,7 +86,7 @@ export class StatusView {
             playerMaxMp = playerHealth.maxMp || 120;
         }
 
-        // --- 2. LEFT COLUMN: CHARACTER ID & ATTRIBUTES (w: 240, x: 68) ---
+        // --- 2. LEFT COLUMN: CHARACTER ID & ATTRIBUTES (w: 248, x: 66) ---
         const col1X = winX + 16;
         const col1W = 248;
 
@@ -126,10 +116,10 @@ export class StatusView {
         // Japanese: リムル＝テンペスト
         ctx.font = '12px "Marcellus", monospace';
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText('リムル＝テンペスト', col1X + 14, idCardY + 72);
+        ctx.fillText('リムル＝テンペスト', col1X + 14, idCardY + 74);
 
-        // Level: Lv. 100 (or live level)
-        ctx.font = 'bold 18px "Cinzel", monospace';
+        // Level: Lv. 100
+        ctx.font = 'bold 16px "Cinzel", monospace';
         ctx.fillStyle = '#fde047';
         ctx.textAlign = 'right';
         ctx.fillText(`Lv. ${pLevel}`, col1X + col1W - 14, idCardY + 64);
@@ -235,7 +225,7 @@ export class StatusView {
         ctx.lineWidth = 1;
         ctx.strokeRect(col1X + 14, expCardY + 36, col1W - 28, 10);
 
-        // --- 3. CENTER COLUMN: SANCTUM SHOWCASE (w: 300, x: 326) ---
+        // --- 3. CENTER COLUMN: SANCTUM SHOWCASE (w: 296, x: 326) ---
         const col2X = col1X + col1W + 12;
         const col2W = 296;
 
@@ -265,10 +255,10 @@ export class StatusView {
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(col2X + col2W / 2, stageY + 90, 80, Math.PI, 0);
+        ctx.arc(col2X + col2W / 2, stageY + 90, 75, Math.PI, 0);
         ctx.stroke();
 
-        // Blue Wall Torches with Animated Flames
+        // Blue Wall Torches with Ambient Flames
         const drawTorch = (tx, ty) => {
             ctx.fillStyle = '#334155';
             ctx.fillRect(tx - 3, ty, 6, 20);
@@ -276,14 +266,13 @@ export class StatusView {
             ctx.fillRect(tx - 5, ty - 4, 10, 6);
             
             // Blue Magic Flame
-            const fPulse = Math.sin(Date.now() / 150 + tx) * 2;
             ctx.fillStyle = '#38bdf8';
             ctx.beginPath();
-            ctx.arc(tx, ty - 10 + fPulse, 7, 0, Math.PI * 2);
+            ctx.arc(tx, ty - 10, 7, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = '#bae6fd';
             ctx.beginPath();
-            ctx.arc(tx, ty - 12 + fPulse, 3.5, 0, Math.PI * 2);
+            ctx.arc(tx, ty - 12, 3.5, 0, Math.PI * 2);
             ctx.fill();
         };
         drawTorch(col2X + 36, stageY + 90);
@@ -291,23 +280,22 @@ export class StatusView {
 
         // Glowing Blue Summoning Circle on the floor
         const circleCenterX = col2X + col2W / 2;
-        const circleCenterY = stageY + 200;
+        const circleCenterY = stageY + 195;
         
         ctx.save();
         ctx.translate(circleCenterX, circleCenterY);
         ctx.scale(1.0, 0.35); // Elliptical floor projection
-        ctx.rotate(this.magicCircleRot);
         
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(0, 0, 90, 0, Math.PI * 2);
+        ctx.arc(0, 0, 72, 0, Math.PI * 2);
         ctx.stroke();
         
-        ctx.setLineDash([6, 6]);
+        ctx.setLineDash([5, 5]);
         ctx.strokeStyle = '#a855f7';
         ctx.beginPath();
-        ctx.arc(0, 0, 75, 0, Math.PI * 2);
+        ctx.arc(0, 0, 58, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
 
@@ -316,24 +304,29 @@ export class StatusView {
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
             const ang = (i * Math.PI) / 3;
-            const x1 = Math.cos(ang) * 75;
-            const y1 = Math.sin(ang) * 75;
-            const x2 = Math.cos(ang + (Math.PI * 2) / 3) * 75;
-            const y2 = Math.sin(ang + (Math.PI * 2) / 3) * 75;
+            const x1 = Math.cos(ang) * 58;
+            const y1 = Math.sin(ang) * 58;
+            const x2 = Math.cos(ang + (Math.PI * 2) / 3) * 58;
+            const y2 = Math.sin(ang + (Math.PI * 2) / 3) * 58;
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
         }
         ctx.stroke();
         ctx.restore();
 
-        // Render Animated Rimuru Slime on Stage
-        const slimeBmp = spriteParser.getBitmap('rimuru', 'idle', this.slimeAnimFrame);
+        // Render Static, Serene, Perfectly Sized Rimuru Slime Portrait on Stage
+        const slimeBmp = spriteParser.getBitmap('rimuru', 'idle', 0);
         if (slimeBmp) {
             ctx.imageSmoothingEnabled = false;
-            const scale = 5.0;
+            // Strict bounding box: max 140px width, max 95px height
+            const maxW = 140;
+            const maxH = 95;
+            const scale = Math.min(maxW / slimeBmp.width, maxH / slimeBmp.height);
             const sW = slimeBmp.width * scale;
             const sH = slimeBmp.height * scale;
-            ctx.drawImage(slimeBmp, circleCenterX - sW / 2, circleCenterY - sH + 10, sW, sH);
+            const slimeDrawX = circleCenterX - sW / 2;
+            const slimeDrawY = circleCenterY - sH + 6;
+            ctx.drawImage(slimeBmp, slimeDrawX, slimeDrawY, sW, sH);
         }
         ctx.restore();
 
