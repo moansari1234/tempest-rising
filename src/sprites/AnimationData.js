@@ -15,7 +15,7 @@ export const AnimationData = {
   goblin: {
     idle: { frameTime: 0.25, frames: 4, loop: true },
     run: { frameTime: 0.12, frames: 4, loop: true },
-    attack: { frameTime: 0.14, frames: 3, loop: false },
+    attack: { frameTime: 0.14, frames: 4, loop: false },
     hurt: { frameTime: 0.12, frames: 2, loop: false },
     death: { frameTime: 0.18, frames: 4, loop: false }
   },
