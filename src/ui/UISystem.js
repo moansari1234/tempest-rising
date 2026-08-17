@@ -954,6 +954,7 @@ export class UISystem {
         }
 
         // Active Offset Lookup (Frame-Level, Clip-Level, or Global-Level Scope)
+        const isCurrentFrameLocked = spriteParser.isFrameLocked(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx);
         const activeOffset = spriteParser.getOffset(
             currentEntity.spriteKey,
             this.editorScope !== 'global' ? currentAnimKey : null,
@@ -967,13 +968,20 @@ export class UISystem {
         if (inputManager.mouseClicked) {
             if (!this.isDraggingSprite) {
                 if (inputManager.isHoverInRect(studioX, studioY, studioW, studioH)) {
-                    this.isDraggingSprite = true;
-                    this.dragStartX = inputManager.mouseX;
-                    this.dragStartY = inputManager.mouseY;
-                    this.dragInitialOffX = curOffX;
-                    this.dragInitialOffY = curOffY;
+                    if (isCurrentFrameLocked) {
+                        this.toastMsg = `🔒 Frame #${this.assetFrameIdx} is LOCKED! Click [🔓 UNLOCK] on right to edit.`;
+                        this.toastTimer = 2.0;
+                    } else {
+                        this.assetIsPaused = true; // Auto-pause so other frames never shift!
+                        this.isDraggingSprite = true;
+                        this.dragStartX = inputManager.mouseX;
+                        this.dragStartY = inputManager.mouseY;
+                        this.dragInitialOffX = curOffX;
+                        this.dragInitialOffY = curOffY;
+                    }
                 }
-            } else {
+            } else if (!isCurrentFrameLocked) {
+                this.assetIsPaused = true;
                 const totalDeltaX = (inputManager.mouseX - this.dragStartX) / (this.assetZoom || 1);
                 const totalDeltaY = (inputManager.mouseY - this.dragStartY) / (this.assetZoom || 1);
                 curOffX = Math.round(this.dragInitialOffX + totalDeltaX);
@@ -989,7 +997,7 @@ export class UISystem {
             if (this.isDraggingSprite) {
                 canvas.style.cursor = 'grabbing';
             } else if (inputManager.isHoverInRect(studioX, studioY, studioW, studioH)) {
-                canvas.style.cursor = 'grab';
+                canvas.style.cursor = isCurrentFrameLocked ? 'not-allowed' : 'grab';
             } else {
                 canvas.style.cursor = 'default';
             }
@@ -1089,9 +1097,9 @@ export class UISystem {
             }
 
             // Bounding Box Wireframe
-            ctx.strokeStyle = this.isDraggingSprite ? '#f59e0b' : 'rgba(168, 85, 247, 0.6)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([2, 2]);
+            ctx.strokeStyle = isCurrentFrameLocked ? '#22c55e' : (this.isDraggingSprite ? '#f59e0b' : 'rgba(168, 85, 247, 0.6)');
+            ctx.lineWidth = isCurrentFrameLocked ? 1.5 : 1;
+            ctx.setLineDash(isCurrentFrameLocked ? [] : [2, 2]);
             ctx.strokeRect(drawX, drawY, dispW, dispH);
             ctx.setLineDash([]);
 
@@ -1112,16 +1120,17 @@ export class UISystem {
         // Live Coordinate Readout Badge (Bottom Center of Stage)
         ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
         ctx.fillRect(studioX + 10, groundLineY + 6, studioW - 20, 22);
-        ctx.strokeStyle = '#334155';
+        ctx.strokeStyle = isCurrentFrameLocked ? '#22c55e' : '#334155';
         ctx.strokeRect(studioX + 10, groundLineY + 6, studioW - 20, 22);
 
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = isCurrentFrameLocked ? '#4ade80' : '#38bdf8';
         ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
         const offXSign = curOffX >= 0 ? '+' : '';
         const offYSign = curOffY >= 0 ? '+' : '';
         const scopeLabel = this.editorScope === 'frame' ? `FRAME #${this.assetFrameIdx}` : (this.editorScope === 'clip' ? `CLIP (${currentAnimKey.toUpperCase()})` : 'GLOBAL');
-        ctx.fillText(`SCOPE: [${scopeLabel}] | X: ${offXSign}${Math.round(curOffX)}px, Y: ${offYSign}${Math.round(curOffY)}px | SCALE: ${curScale.toFixed(2)}x`, studioX + studioW / 2, groundLineY + 20);
+        const lockTag = isCurrentFrameLocked ? '🔒 [LOCKED & SAVED]' : '✏️ [UNLOCKED]';
+        ctx.fillText(`${lockTag} SCOPE: [${scopeLabel}] | X: ${offXSign}${Math.round(curOffX)}px, Y: ${offYSign}${Math.round(curOffY)}px | SCALE: ${curScale.toFixed(2)}x`, studioX + studioW / 2, groundLineY + 20);
 
         // Studio Playback State Badge (Top-Left)
         if (inputManager.isClickInRect(studioX + 10, studioY + 10, 85, 20)) {
@@ -1181,40 +1190,46 @@ export class UISystem {
         ctx.fillStyle = '#e2e8f0';
         ctx.fillText('▶', nextBtnX + 10, scrubberY + 14);
 
-        // Individual Clickable Frame Pills
+        // Individual Clickable Frame Pills with Lock & Override Badges
         const pillsAreaX = scrubberStartX + 24;
         const pillsAreaW = scrubberW - 48;
-        const pillW = Math.min(26, Math.max(16, Math.floor((pillsAreaW - (totalFrames - 1) * 2) / totalFrames)));
+        const pillW = Math.min(32, Math.max(20, Math.floor((pillsAreaW - (totalFrames - 1) * 2) / totalFrames)));
         const totalPillsWidth = totalFrames * pillW + (totalFrames - 1) * 2;
         const pillsStartX = pillsAreaX + (pillsAreaW - totalPillsWidth) / 2;
 
         for (let f = 0; f < totalFrames; f++) {
             const pX = pillsStartX + f * (pillW + 2);
             const isFActive = f === this.assetFrameIdx;
+            const isFLocked = spriteParser.isFrameLocked(currentEntity.spriteKey, currentAnimKey, f);
+            const hasCustom = spriteParser.hasCustomFrameOffset(currentEntity.spriteKey, currentAnimKey, f);
 
             if (inputManager.isClickInRect(pX, scrubberY, pillW, scrubberH)) {
                 this.assetFrameIdx = f;
                 this.assetIsPaused = true;
             }
 
+            let pillLabel = `F${f}`;
+            if (isFLocked) pillLabel = `🔒${f}`;
+            else if (hasCustom) pillLabel = `✏️${f}`;
+
             if (isFActive) {
-                ctx.fillStyle = '#38bdf8';
+                ctx.fillStyle = isFLocked ? '#22c55e' : '#38bdf8';
                 ctx.fillRect(pX, scrubberY, pillW, scrubberH);
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(pX, scrubberY, pillW, scrubberH);
                 ctx.fillStyle = '#0f172a';
-                ctx.font = 'bold 9px monospace';
-                ctx.fillText(`F${f}`, pX + pillW / 2, scrubberY + 14);
+                ctx.font = 'bold 8px monospace';
+                ctx.fillText(pillLabel, pX + pillW / 2, scrubberY + 14);
             } else {
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
                 ctx.fillRect(pX, scrubberY, pillW, scrubberH);
-                ctx.strokeStyle = '#334155';
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = isFLocked ? 'rgba(34, 197, 94, 0.5)' : (hasCustom ? 'rgba(234, 179, 8, 0.5)' : '#334155');
+                ctx.lineWidth = isFLocked || hasCustom ? 1.5 : 1;
                 ctx.strokeRect(pX, scrubberY, pillW, scrubberH);
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = isFLocked ? '#4ade80' : (hasCustom ? '#facc15' : '#94a3b8');
                 ctx.font = '8px monospace';
-                ctx.fillText(`${f}`, pX + pillW / 2, scrubberY + 14);
+                ctx.fillText(pillLabel, pX + pillW / 2, scrubberY + 14);
             }
         }
 
@@ -1327,28 +1342,19 @@ export class UISystem {
         ctx.fillText('📊 STATS', rightX + 6 + tab1W + 4 + tab2W / 2, rightY + 17);
 
         if (this.assetTab === 'editor') {
-            // === ALIGNMENT EDITOR PANEL (FRAME-LEVEL CONTROL) ===
-            let ctrlY = rightY + 36;
+            // === ALIGNMENT EDITOR PANEL (FRAME-LEVEL CONTROL & LOCK/SAVE) ===
+            let ctrlY = rightY + 34;
 
             // --- 3-WAY SCOPE SELECTOR ---
-            ctx.fillStyle = '#64748b';
-            ctx.font = 'bold 8px monospace';
-            ctx.textAlign = 'left';
-            ctx.fillText('EDITING SCOPE LEVEL:', rightX + 10, ctrlY);
-            ctrlY += 6;
-
             const scopeBtnW = (rightW - 24) / 3;
             const scopeBtnH = 20;
 
-            // Scope 1: Active Frame Only
             if (inputManager.isClickInRect(rightX + 10, ctrlY, scopeBtnW, scopeBtnH)) {
                 this.editorScope = 'frame';
             }
-            // Scope 2: Clip
             if (inputManager.isClickInRect(rightX + 10 + scopeBtnW + 2, ctrlY, scopeBtnW, scopeBtnH)) {
                 this.editorScope = 'clip';
             }
-            // Scope 3: Global Entity
             if (inputManager.isClickInRect(rightX + 10 + (scopeBtnW + 2) * 2, ctrlY, scopeBtnW, scopeBtnH)) {
                 this.editorScope = 'global';
             }
@@ -1369,7 +1375,44 @@ export class UISystem {
             drawScopePill(rightX + 10 + scopeBtnW + 2, ctrlY, scopeBtnW, scopeBtnH, '🎬 CLIP', this.editorScope === 'clip');
             drawScopePill(rightX + 10 + (scopeBtnW + 2) * 2, ctrlY, scopeBtnW, scopeBtnH, '🌐 GLOBAL', this.editorScope === 'global');
 
-            ctrlY += 26;
+            ctrlY += 24;
+
+            // --- PROMINENT LOCK / UNLOCK & SAVE POSITION PANEL ---
+            const lockBoxH = 24;
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, lockBoxH)) {
+                const newLock = spriteParser.toggleFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx);
+                if (newLock) {
+                    spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+                    this.toastMsg = `🔒 Frame #${this.assetFrameIdx} Position Locked & Saved!`;
+                } else {
+                    this.toastMsg = `🔓 Frame #${this.assetFrameIdx} Unlocked for editing`;
+                }
+                this.toastTimer = 2.5;
+            }
+
+            if (isCurrentFrameLocked) {
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+                ctx.fillRect(rightX + 10, ctrlY, rightW - 20, lockBoxH);
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, lockBoxH);
+                ctx.fillStyle = '#4ade80';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`🔒 FRAME #${this.assetFrameIdx} LOCKED (CLICK TO UNLOCK)`, rightX + rightW / 2, ctrlY + 16);
+            } else {
+                ctx.fillStyle = 'rgba(234, 179, 8, 0.25)';
+                ctx.fillRect(rightX + 10, ctrlY, rightW - 20, lockBoxH);
+                ctx.strokeStyle = '#eab308';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, lockBoxH);
+                ctx.fillStyle = '#fde047';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`💾 SAVE & LOCK FRAME #${this.assetFrameIdx}`, rightX + rightW / 2, ctrlY + 16);
+            }
+
+            ctrlY += 28;
 
             // --- 1. OFFSET X CONTROLS ---
             ctx.fillStyle = '#cbd5e1';
@@ -1382,30 +1425,31 @@ export class UISystem {
             const btnBH = 20;
             const rowX = rightX + 10;
 
+            const handleNudge = (deltaX, deltaY, deltaScale) => {
+                if (isCurrentFrameLocked) {
+                    this.toastMsg = `🔒 Frame #${this.assetFrameIdx} is LOCKED! Click [🔓 UNLOCK] above to adjust.`;
+                    this.toastTimer = 2.0;
+                    return;
+                }
+                this.assetIsPaused = true;
+                if (deltaX) curOffX += deltaX;
+                if (deltaY) curOffY += deltaY;
+                if (deltaScale) curScale = Math.max(0.2, Math.min(3.0, curScale + deltaScale));
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+            };
+
             // Buttons: [-5] [-1] [Value] [+1] [+5]
-            if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) {
-                curOffX -= 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) {
-                curOffX -= 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) {
-                curOffX += 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) {
-                curOffX += 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
+            if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) handleNudge(-5, 0, 0);
+            if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) handleNudge(-1, 0, 0);
+            if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) handleNudge(1, 0, 0);
+            if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) handleNudge(5, 0, 0);
 
             const drawNudgeBtn = (bx, by, bw, bh, text, active) => {
-                ctx.fillStyle = active ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.8)';
+                ctx.fillStyle = isCurrentFrameLocked ? 'rgba(30, 41, 59, 0.4)' : (active ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.8)');
                 ctx.fillRect(bx, by, bw, bh);
-                ctx.strokeStyle = '#475569';
+                ctx.strokeStyle = isCurrentFrameLocked ? '#334155' : '#475569';
                 ctx.strokeRect(bx, by, bw, bh);
-                ctx.fillStyle = '#e2e8f0';
+                ctx.fillStyle = isCurrentFrameLocked ? '#64748b' : '#e2e8f0';
                 ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
                 ctx.fillText(text, bx + bw / 2, by + 14);
@@ -1417,9 +1461,9 @@ export class UISystem {
             // Center Value Display
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(rowX + 76, ctrlY, 62, btnBH);
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = isCurrentFrameLocked ? '#22c55e' : '#38bdf8';
             ctx.strokeRect(rowX + 76, ctrlY, 62, btnBH);
-            ctx.fillStyle = '#38bdf8';
+            ctx.fillStyle = isCurrentFrameLocked ? '#4ade80' : '#38bdf8';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
             ctx.fillText(`${offXSign}${Math.round(curOffX)}px`, rowX + 107, ctrlY + 14);
@@ -1427,7 +1471,7 @@ export class UISystem {
             drawNudgeBtn(rowX + 142, ctrlY, btnBW, btnBH, '+1');
             drawNudgeBtn(rowX + 180, ctrlY, btnBW, btnBH, '+5');
 
-            ctrlY += 26;
+            ctrlY += 25;
 
             // --- 2. OFFSET Y CONTROLS ---
             ctx.fillStyle = '#cbd5e1';
@@ -1436,31 +1480,19 @@ export class UISystem {
             ctx.fillText('OFFSET Y (VERTICAL PIVOT)', rightX + 10, ctrlY);
             ctrlY += 6;
 
-            if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) {
-                curOffY -= 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) {
-                curOffY -= 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) {
-                curOffY += 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) {
-                curOffY += 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
+            if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) handleNudge(0, -5, 0);
+            if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) handleNudge(0, -1, 0);
+            if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) handleNudge(0, 1, 0);
+            if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) handleNudge(0, 5, 0);
 
             drawNudgeBtn(rowX, ctrlY, btnBW, btnBH, '-5');
             drawNudgeBtn(rowX + 38, ctrlY, btnBW, btnBH, '-1');
 
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(rowX + 76, ctrlY, 62, btnBH);
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = isCurrentFrameLocked ? '#22c55e' : '#38bdf8';
             ctx.strokeRect(rowX + 76, ctrlY, 62, btnBH);
-            ctx.fillStyle = '#38bdf8';
+            ctx.fillStyle = isCurrentFrameLocked ? '#4ade80' : '#38bdf8';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
             ctx.fillText(`${offYSign}${Math.round(curOffY)}px`, rowX + 107, ctrlY + 14);
@@ -1468,7 +1500,7 @@ export class UISystem {
             drawNudgeBtn(rowX + 142, ctrlY, btnBW, btnBH, '+1');
             drawNudgeBtn(rowX + 180, ctrlY, btnBW, btnBH, '+5');
 
-            ctrlY += 26;
+            ctrlY += 25;
 
             // --- 3. SCALE CONTROLS ---
             ctx.fillStyle = '#cbd5e1';
@@ -1477,14 +1509,8 @@ export class UISystem {
             ctx.fillText('SPRITE SCALE RATIO', rightX + 10, ctrlY);
             ctrlY += 6;
 
-            if (inputManager.isClickInRect(rowX, ctrlY, 56, btnBH)) {
-                curScale = Math.max(0.2, curScale - 0.1);
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
-            if (inputManager.isClickInRect(rowX + 158, ctrlY, 56, btnBH)) {
-                curScale = Math.min(3.0, curScale + 0.1);
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-            }
+            if (inputManager.isClickInRect(rowX, ctrlY, 56, btnBH)) handleNudge(0, 0, -0.1);
+            if (inputManager.isClickInRect(rowX + 158, ctrlY, 56, btnBH)) handleNudge(0, 0, 0.1);
 
             drawNudgeBtn(rowX, ctrlY, 56, btnBH, '-0.1x');
 
@@ -1499,42 +1525,54 @@ export class UISystem {
 
             drawNudgeBtn(rowX + 158, ctrlY, 56, btnBH, '+0.1x');
 
-            ctrlY += 26;
+            ctrlY += 25;
 
-            // --- 4. COPY FRAME OFFSET TO ALL FRAMES ACTION ---
-            const copyBtnH = 22;
+            // --- 4. COPY FRAME OFFSET TO ALL FRAMES ---
+            const copyBtnH = 20;
             if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, copyBtnH)) {
                 spriteParser.copyFrameToAll(currentEntity.spriteKey, currentAnimKey, totalFrames, this.assetFrameIdx);
                 this.toastMsg = `📋 Copied Frame ${this.assetFrameIdx} offset to all ${totalFrames} frames!`;
                 this.toastTimer = 2.5;
             }
-            ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.18)';
             ctx.fillRect(rightX + 10, ctrlY, rightW - 20, copyBtnH);
             ctx.strokeStyle = '#eab308';
             ctx.lineWidth = 1;
             ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, copyBtnH);
             ctx.fillStyle = '#eab308';
-            ctx.font = 'bold 9px monospace';
+            ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`📋 COPY F${this.assetFrameIdx} OFFSET TO ALL FRAMES`, rightX + rightW / 2, ctrlY + 15);
+            ctx.fillText(`📋 COPY F${this.assetFrameIdx} OFFSET TO ALL FRAMES`, rightX + rightW / 2, ctrlY + 14);
 
-            ctrlY += 26;
+            ctrlY += 24;
 
             // --- 5. PRESET ACTIONS ---
             const actW = (rightW - 26) / 2;
             const actH = 20;
 
             if (inputManager.isClickInRect(rightX + 10, ctrlY, actW, actH)) {
-                curOffX = 0;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-                this.toastMsg = '🎯 Centered X Pivot (0px)';
-                this.toastTimer = 2.0;
+                if (!isCurrentFrameLocked) {
+                    this.assetIsPaused = true;
+                    curOffX = 0;
+                    spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+                    this.toastMsg = '🎯 Centered X Pivot (0px)';
+                    this.toastTimer = 2.0;
+                } else {
+                    this.toastMsg = `🔒 Frame #${this.assetFrameIdx} is locked! Unlock to center.`;
+                    this.toastTimer = 2.0;
+                }
             }
             if (inputManager.isClickInRect(rightX + 10 + actW + 6, ctrlY, actW, actH)) {
-                curOffY = 0;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
-                this.toastMsg = '⚓ Grounded Y to Floor';
-                this.toastTimer = 2.0;
+                if (!isCurrentFrameLocked) {
+                    this.assetIsPaused = true;
+                    curOffY = 0;
+                    spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
+                    this.toastMsg = '⚓ Grounded Y to Floor';
+                    this.toastTimer = 2.0;
+                } else {
+                    this.toastMsg = `🔒 Frame #${this.assetFrameIdx} is locked! Unlock to ground.`;
+                    this.toastTimer = 2.0;
+                }
             }
 
             drawNudgeBtn(rightX + 10, ctrlY, actW, actH, '🎯 Center X');
@@ -1544,10 +1582,11 @@ export class UISystem {
 
             if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, actH)) {
                 spriteParser.resetOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, this.editorScope);
-                this.toastMsg = `↺ Reset ${this.editorScope.toUpperCase()} Offsets`;
+                spriteParser.setFrameLock(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, false);
+                this.toastMsg = `↺ Reset ${this.editorScope.toUpperCase()} Offsets & Unlocked`;
                 this.toastTimer = 2.0;
             }
-            drawNudgeBtn(rightX + 10, ctrlY, rightW - 20, actH, `↺ Reset Active Scope (${this.editorScope.toUpperCase()})`);
+            drawNudgeBtn(rightX + 10, ctrlY, rightW - 20, actH, `↺ Reset (${this.editorScope.toUpperCase()}) & Unlock`);
 
             ctrlY += 24;
 
@@ -1565,7 +1604,7 @@ export class UISystem {
             ctrlY += 24;
 
             // --- 7. EXPORT / COPY JSON BUTTON ---
-            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 26)) {
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 24)) {
                 try {
                     const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
                     navigator.clipboard.writeText(jsonStr);
@@ -1578,14 +1617,14 @@ export class UISystem {
             }
 
             ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
-            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 26);
+            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 24);
             ctx.strokeStyle = '#22c55e';
             ctx.lineWidth = 1.5;
-            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 26);
+            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 24);
             ctx.fillStyle = '#22c55e';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('📋 EXPORT / COPY JSON', rightX + rightW / 2, ctrlY + 17);
+            ctx.fillText('📋 EXPORT / COPY JSON', rightX + rightW / 2, ctrlY + 16);
 
         } else {
             // === STATS & DOSSIER PANEL ===

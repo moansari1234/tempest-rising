@@ -5,6 +5,54 @@ export class SpriteParser {
   constructor() {
     this.cache = new Map(); // "entityId_animationName_frameIndex" -> ImageBitmap
     this.offsets = this.loadOffsets();
+    this.locks = this.loadLocks();
+  }
+
+  loadLocks() {
+    try {
+      const saved = localStorage.getItem('tempest_sprite_locks');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {};
+  }
+
+  saveLocks() {
+    try {
+      localStorage.setItem('tempest_sprite_locks', JSON.stringify(this.locks));
+    } catch (e) {}
+  }
+
+  isFrameLocked(entityKey, animKey, frameIndex) {
+    const key = `${entityKey}_${animKey}_f${frameIndex}`;
+    return !!this.locks[key];
+  }
+
+  toggleFrameLock(entityKey, animKey, frameIndex) {
+    const key = `${entityKey}_${animKey}_f${frameIndex}`;
+    this.locks[key] = !this.locks[key];
+    this.saveLocks();
+    return this.locks[key];
+  }
+
+  setFrameLock(entityKey, animKey, frameIndex, locked = true) {
+    const key = `${entityKey}_${animKey}_f${frameIndex}`;
+    if (locked) this.locks[key] = true;
+    else delete this.locks[key];
+    this.saveLocks();
+  }
+
+  lockAllFrames(entityKey, animKey, totalFrames, locked = true) {
+    for (let f = 0; f < totalFrames; f++) {
+      const key = `${entityKey}_${animKey}_f${f}`;
+      if (locked) this.locks[key] = true;
+      else delete this.locks[key];
+    }
+    this.saveLocks();
+  }
+
+  hasCustomFrameOffset(entityKey, animKey, frameIndex) {
+    const key = `${entityKey}_${animKey}_f${frameIndex}`;
+    return !!this.offsets[key];
   }
 
   loadOffsets() {
