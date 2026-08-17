@@ -289,8 +289,16 @@ export class RenderSystem {
               displayH = bitmap.height * 2;
           }
           
+          const offset = spriteParser.getOffset(sprite.spriteKey, sprite.currentAnimation);
+          if (offset.scale && offset.scale !== 1.0) {
+              displayW *= offset.scale;
+              displayH *= offset.scale;
+          }
+          
           let drawX = isPropOrHazard ? transform.x : (transform.x + transform.width / 2 - displayW / 2);
           let drawY = isPropOrHazard ? transform.y : (transform.y + transform.height - displayH);
+          drawX += (offset.offsetX || 0);
+          drawY += (offset.offsetY || 0);
           
           if (sprite.spriteKey === 'rimuru' && bitmap.width > 16) {
               // Wide attack slash sprite: anchor slime body at transform.x

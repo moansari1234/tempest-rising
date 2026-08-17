@@ -15,6 +15,18 @@ export class UISystem {
         this.assetIsPaused = false;
         this.assetZoom = 1; // Strict 1x default zoom
         this.assetFacing = 'right';
+        
+        // Alignment Editor State
+        this.assetTab = 'editor'; // 'editor' or 'dossier'
+        this.editorPerAnim = false; // Global entity vs per-clip offset
+        this.showTileBox = true;
+        this.showCrosshair = true;
+        this.showGroundLine = true;
+        this.isDraggingSprite = false;
+        this.dragPrevX = 0;
+        this.dragPrevY = 0;
+        this.toastMsg = null;
+        this.toastTimer = 0;
 
         this.entitiesList = [
             {
@@ -939,37 +951,107 @@ export class UISystem {
             }
         }
 
-        // Center Origin Crosshair & Ground Line
-        const groundLineY = studioY + studioH - 35;
-        ctx.strokeStyle = 'rgba(74, 222, 128, 0.45)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(studioX + 15, groundLineY);
-        ctx.lineTo(studioX + studioW - 15, groundLineY);
-        ctx.stroke();
+        // Active Offset Lookup
+        const activeOffset = spriteParser.getOffset(currentEntity.spriteKey, this.editorPerAnim ? currentAnimKey : null);
+        let curOffX = activeOffset.offsetX || 0;
+        let curOffY = activeOffset.offsetY || 0;
+        let curScale = activeOffset.scale !== undefined ? activeOffset.scale : 1.0;
 
-        // Render Centered Active Sprite
+        // Viewport Dragging to Reposition Sprite
+        if (inputManager.isMouseDownInRect(studioX, studioY, studioW, studioH)) {
+            if (!this.isDraggingSprite) {
+                this.isDraggingSprite = true;
+                this.dragPrevX = inputManager.mouseX;
+                this.dragPrevY = inputManager.mouseY;
+            } else {
+                const deltaX = (inputManager.mouseX - this.dragPrevX) / (this.assetZoom || 1);
+                const deltaY = (inputManager.mouseY - this.dragPrevY) / (this.assetZoom || 1);
+                if (Math.abs(deltaX) >= 0.5 || Math.abs(deltaY) >= 0.5) {
+                    curOffX += deltaX;
+                    curOffY += deltaY;
+                    spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                    this.dragPrevX = inputManager.mouseX;
+                    this.dragPrevY = inputManager.mouseY;
+                }
+            }
+        } else {
+            this.isDraggingSprite = false;
+        }
+
+        // Center Origin Crosshair & Ground Line Reference
+        const groundLineY = studioY + studioH - 35;
+        const centerX = studioX + studioW / 2;
+
+        if (this.showGroundLine) {
+            ctx.strokeStyle = 'rgba(74, 222, 128, 0.6)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(studioX + 10, groundLineY);
+            ctx.lineTo(studioX + studioW - 10, groundLineY);
+            ctx.stroke();
+
+            // Ground Marker Tag
+            ctx.fillStyle = '#4ade80';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText('GROUND BASE [Y=0]', studioX + studioW - 14, groundLineY - 4);
+        }
+
+        if (this.showCrosshair) {
+            ctx.strokeStyle = 'rgba(234, 179, 8, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(centerX, studioY + 10);
+            ctx.lineTo(centerX, studioY + studioH - 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Center Tag
+            ctx.fillStyle = '#eab308';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('ORIGIN [X=0]', centerX, studioY + 20);
+        }
+
+        // In-World Tile Reference Box (32x32)
+        if (this.showTileBox) {
+            const tileBoxSize = 32 * this.assetZoom * 2;
+            const tileBoxX = centerX - tileBoxSize / 2;
+            const tileBoxY = groundLineY - tileBoxSize;
+
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+            ctx.fillRect(tileBoxX, tileBoxY, tileBoxSize, tileBoxSize);
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(tileBoxX, tileBoxY, tileBoxSize, tileBoxSize);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('32x32 TILE BOUNDS', tileBoxX + 4, tileBoxY + 12);
+        }
+
+        // Render Centered Active Sprite with Live Offsets
         const bitmap = spriteParser.getBitmap(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, currentEntity.forcePack || null);
         if (bitmap) {
             ctx.save();
             ctx.imageSmoothingEnabled = false;
 
-            // Strict 1x base scaling with zoom factor
-            let baseScale = this.assetZoom;
+            let baseScale = this.assetZoom * curScale;
             if (bitmap.width >= 100) {
-                baseScale = 0.5 * this.assetZoom; // High-res sheet
+                baseScale = 0.5 * this.assetZoom * curScale;
             } else if (bitmap.width <= 32) {
-                baseScale = 2.0 * this.assetZoom; // 16-bit pixel art
+                baseScale = 2.0 * this.assetZoom * curScale;
             } else {
-                baseScale = 1.0 * this.assetZoom;
+                baseScale = 1.0 * this.assetZoom * curScale;
             }
 
             const dispW = bitmap.width * baseScale;
             const dispH = bitmap.height * baseScale;
 
-            const centerX = studioX + studioW / 2;
-            const drawX = centerX - dispW / 2;
-            const drawY = groundLineY - dispH;
+            const drawX = centerX - dispW / 2 + curOffX * this.assetZoom;
+            const drawY = groundLineY - dispH + curOffY * this.assetZoom;
 
             if (this.assetFacing === 'left') {
                 ctx.translate(drawX + dispW, drawY);
@@ -989,8 +1071,39 @@ export class UISystem {
                 }
             }
 
+            // Bounding Box Wireframe
+            ctx.strokeStyle = this.isDraggingSprite ? '#f59e0b' : 'rgba(168, 85, 247, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.strokeRect(drawX, drawY, dispW, dispH);
+            ctx.setLineDash([]);
+
+            // Pivot Center Crosshair on Sprite
+            const pivotX = drawX + dispW / 2;
+            const pivotY = drawY + dispH / 2;
+            ctx.strokeStyle = '#ec4899';
+            ctx.beginPath();
+            ctx.moveTo(pivotX - 5, pivotY);
+            ctx.lineTo(pivotX + 5, pivotY);
+            ctx.moveTo(pivotX, pivotY - 5);
+            ctx.lineTo(pivotX, pivotY + 5);
+            ctx.stroke();
+
             ctx.restore();
         }
+
+        // Live Coordinate Readout Badge (Bottom Center of Stage)
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.fillRect(studioX + 10, groundLineY + 6, studioW - 20, 22);
+        ctx.strokeStyle = '#334155';
+        ctx.strokeRect(studioX + 10, groundLineY + 6, studioW - 20, 22);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        const offXSign = curOffX >= 0 ? '+' : '';
+        const offYSign = curOffY >= 0 ? '+' : '';
+        ctx.fillText(`OFFSET: X: ${offXSign}${Math.round(curOffX)}px, Y: ${offYSign}${Math.round(curOffY)}px | SCALE: ${curScale.toFixed(2)}x | DRAG VIEWPORT TO MOVE`, studioX + studioW / 2, groundLineY + 20);
 
         // Studio Playback State Badge (Top-Left)
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -1031,9 +1144,8 @@ export class UISystem {
         ctx.fillStyle = '#64748b';
         ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(`ALL ANIMATION CLIPS (${animList.length} TOTAL - PRESS W / S OR CLICK)`, studioX + 12, matrixY + 18);
+        ctx.fillText(`ALL ANIMATION CLIPS (${animList.length} TOTAL - CLICK OR W/S)`, studioX + 12, matrixY + 18);
 
-        // Render 2-Column Grid for ALL Animation Clips (Never Truncates!)
         const clipCols = 2;
         const btnW = (studioW - 30) / clipCols;
         const btnH = 22;
@@ -1046,7 +1158,6 @@ export class UISystem {
             const bY = matrixY + 26 + row * (btnH + 4);
             const isCSelected = k === this.assetAnimIdx;
 
-            // Mouse click to select animation
             if (inputManager.isClickInRect(bX, bY, btnW, btnH)) {
                 this.assetAnimIdx = k;
                 this.assetFrameIdx = 0;
@@ -1071,26 +1182,22 @@ export class UISystem {
                 ctx.strokeRect(bX, bY, btnW, btnH);
             }
 
-            // Get frame count for badge
             const aData = AnimationData[currentEntity.spriteKey] ? AnimationData[currentEntity.spriteKey][clip] : null;
             const fCount = aData ? aData.frames : 1;
 
             ctx.fillStyle = isCSelected ? '#38bdf8' : '#e2e8f0';
             ctx.font = isCSelected ? 'bold 10px monospace' : '10px monospace';
             ctx.textAlign = 'left';
-            
-            // Format clip label nicely
             const niceName = this.formatClipName(clip);
             ctx.fillText(`${isCSelected ? '▶ ' : '  '}${niceName}`, bX + 6, bY + 15);
 
-            // Frame count tag
             ctx.fillStyle = isCSelected ? '#0284c7' : '#64748b';
             ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'right';
             ctx.fillText(`${fCount}f`, bX + btnW - 6, bY + 15);
         }
 
-        // --- 5. RIGHT COLUMN: TECHNICAL DOSSIER & EQUIP BUTTON (x: 708, w: 234, h: 450) ---
+        // --- 5. RIGHT COLUMN: SPRITE ALIGNMENT & PIVOT EDITOR (x: 708, w: 234, h: 450) ---
         const rightX = 708;
         const rightY = 42;
         const rightW = 234;
@@ -1102,111 +1209,392 @@ export class UISystem {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(rightX, rightY, rightW, rightH);
 
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 13px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(currentEntity.name, rightX + 12, rightY + 22);
+        // Dual Tabs: [ 🛠️ ALIGNMENT EDITOR ] vs [ 📊 DOSSIER & STATS ]
+        const tab1W = 114;
+        const tab2W = 104;
+        const tabH = 26;
 
-        ctx.fillStyle = '#a855f7';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText(currentEntity.title, rightX + 12, rightY + 38);
+        if (inputManager.isClickInRect(rightX + 6, rightY + 6, tab1W, tabH)) {
+            this.assetTab = 'editor';
+        }
+        if (inputManager.isClickInRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH)) {
+            this.assetTab = 'dossier';
+        }
 
-        // Big Prominent Equip Action Button (y: rightY + 46)
-        const equipBoxY = rightY + 46;
-        const activeSkin = spriteParser.getSkin(currentEntity.spriteKey);
-        const isCurrentlyEquipped = currentEntity.forcePack !== null && currentEntity.forcePack === activeSkin;
+        // Tab 1 Button
+        ctx.fillStyle = this.assetTab === 'editor' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)';
+        ctx.fillRect(rightX + 6, rightY + 6, tab1W, tabH);
+        ctx.strokeStyle = this.assetTab === 'editor' ? '#38bdf8' : '#334155';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rightX + 6, rightY + 6, tab1W, tabH);
+        ctx.fillStyle = this.assetTab === 'editor' ? '#38bdf8' : '#94a3b8';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('🛠️ ALIGNMENT', rightX + 6 + tab1W / 2, rightY + 22);
 
-        if (currentEntity.forcePack !== null) {
-            // Click to equip
-            if (inputManager.isClickInRect(rightX + 10, equipBoxY, rightW - 20, 36)) {
-                spriteParser.setSkin(currentEntity.spriteKey, currentEntity.forcePack);
-                this.triggerEquipNotification(context, `✨ EQUIPPED: ${currentEntity.name}`);
+        // Tab 2 Button
+        ctx.fillStyle = this.assetTab === 'dossier' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)';
+        ctx.fillRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH);
+        ctx.strokeStyle = this.assetTab === 'dossier' ? '#a855f7' : '#334155';
+        ctx.strokeRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH);
+        ctx.fillStyle = this.assetTab === 'dossier' ? '#a855f7' : '#94a3b8';
+        ctx.fillText('📊 STATS', rightX + 6 + tab1W + 4 + tab2W / 2, rightY + 22);
+
+        if (this.assetTab === 'editor') {
+            // === ALIGNMENT EDITOR PANEL ===
+            let ctrlY = rightY + 38;
+
+            // Scope Toggle Button
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 22)) {
+                this.editorPerAnim = !this.editorPerAnim;
+            }
+            ctx.fillStyle = this.editorPerAnim ? 'rgba(234, 179, 8, 0.2)' : 'rgba(56, 189, 248, 0.15)';
+            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 22);
+            ctx.strokeStyle = this.editorPerAnim ? '#eab308' : '#38bdf8';
+            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 22);
+            ctx.fillStyle = this.editorPerAnim ? '#eab308' : '#38bdf8';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.editorPerAnim ? `🔘 SCOPE: THIS CLIP (${currentAnimKey.toUpperCase()})` : '🔘 SCOPE: GLOBAL (ALL CLIPS)', rightX + rightW / 2, ctrlY + 15);
+
+            ctrlY += 28;
+
+            // --- 1. OFFSET X CONTROLS ---
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('OFFSET X (HORIZONTAL PIVOT)', rightX + 10, ctrlY);
+            ctrlY += 8;
+
+            const btnBW = 34;
+            const btnBH = 22;
+            const rowX = rightX + 10;
+
+            // Buttons: [-5] [-1] [Value] [+1] [+5]
+            if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) {
+                curOffX -= 5;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) {
+                curOffX -= 1;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) {
+                curOffX += 1;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) {
+                curOffX += 5;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
             }
 
-            if (isCurrentlyEquipped) {
-                ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
-                ctx.fillRect(rightX + 10, equipBoxY, rightW - 20, 36);
-                ctx.strokeStyle = '#22c55e';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(rightX + 10, equipBoxY, rightW - 20, 36);
-
-                ctx.fillStyle = '#22c55e';
-                ctx.font = 'bold 11px monospace';
+            const drawNudgeBtn = (bx, by, bw, bh, text, active) => {
+                ctx.fillStyle = active ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.8)';
+                ctx.fillRect(bx, by, bw, bh);
+                ctx.strokeStyle = '#475569';
+                ctx.strokeRect(bx, by, bw, bh);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('✔ ACTIVE IN GAME', rightX + rightW / 2, equipBoxY + 22);
-            } else {
-                ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
-                ctx.fillRect(rightX + 10, equipBoxY, rightW - 20, 36);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(rightX + 10, equipBoxY, rightW - 20, 36);
+                ctx.fillText(text, bx + bw / 2, by + 15);
+            };
+
+            drawNudgeBtn(rowX, ctrlY, btnBW, btnBH, '-5');
+            drawNudgeBtn(rowX + 38, ctrlY, btnBW, btnBH, '-1');
+
+            // Center Value Display
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(rowX + 76, ctrlY, 62, btnBH);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeRect(rowX + 76, ctrlY, 62, btnBH);
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${offXSign}${Math.round(curOffX)}px`, rowX + 107, ctrlY + 15);
+
+            drawNudgeBtn(rowX + 142, ctrlY, btnBW, btnBH, '+1');
+            drawNudgeBtn(rowX + 180, ctrlY, btnBW, btnBH, '+5');
+
+            ctrlY += 30;
+
+            // --- 2. OFFSET Y CONTROLS ---
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('OFFSET Y (VERTICAL PIVOT)', rightX + 10, ctrlY);
+            ctrlY += 8;
+
+            if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) {
+                curOffY -= 5;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) {
+                curOffY -= 1;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) {
+                curOffY += 1;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) {
+                curOffY += 5;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+
+            drawNudgeBtn(rowX, ctrlY, btnBW, btnBH, '-5');
+            drawNudgeBtn(rowX + 38, ctrlY, btnBW, btnBH, '-1');
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(rowX + 76, ctrlY, 62, btnBH);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeRect(rowX + 76, ctrlY, 62, btnBH);
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${offYSign}${Math.round(curOffY)}px`, rowX + 107, ctrlY + 15);
+
+            drawNudgeBtn(rowX + 142, ctrlY, btnBW, btnBH, '+1');
+            drawNudgeBtn(rowX + 180, ctrlY, btnBW, btnBH, '+5');
+
+            ctrlY += 30;
+
+            // --- 3. SCALE CONTROLS ---
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('SPRITE SCALE RATIO', rightX + 10, ctrlY);
+            ctrlY += 8;
+
+            if (inputManager.isClickInRect(rowX, ctrlY, 56, btnBH)) {
+                curScale = Math.max(0.2, curScale - 0.1);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+            if (inputManager.isClickInRect(rowX + 158, ctrlY, 56, btnBH)) {
+                curScale = Math.min(3.0, curScale + 0.1);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+            }
+
+            drawNudgeBtn(rowX, ctrlY, 56, btnBH, '-0.1x');
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(rowX + 62, ctrlY, 90, btnBH);
+            ctx.strokeStyle = '#a855f7';
+            ctx.strokeRect(rowX + 62, ctrlY, 90, btnBH);
+            ctx.fillStyle = '#a855f7';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${curScale.toFixed(2)}x`, rowX + 107, ctrlY + 15);
+
+            drawNudgeBtn(rowX + 158, ctrlY, 56, btnBH, '+0.1x');
+
+            ctrlY += 30;
+
+            // --- 4. PRESET ACTIONS ---
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('PRESET ALIGNMENTS', rightX + 10, ctrlY);
+            ctrlY += 8;
+
+            const actW = (rightW - 26) / 2;
+            const actH = 22;
+
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, actW, actH)) {
+                curOffX = 0;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                this.toastMsg = '🎯 Centered X Pivot (0px)';
+                this.toastTimer = 2.0;
+            }
+            if (inputManager.isClickInRect(rightX + 10 + actW + 6, ctrlY, actW, actH)) {
+                curOffY = 0;
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                this.toastMsg = '⚓ Grounded Y to Floor';
+                this.toastTimer = 2.0;
+            }
+
+            drawNudgeBtn(rightX + 10, ctrlY, actW, actH, '🎯 Center X');
+            drawNudgeBtn(rightX + 10 + actW + 6, ctrlY, actW, actH, '⚓ Ground Y');
+
+            ctrlY += 26;
+
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, actH)) {
+                spriteParser.resetOffset(currentEntity.spriteKey, currentAnimKey, this.editorPerAnim);
+                this.toastMsg = '↺ Offsets Reset to Default';
+                this.toastTimer = 2.0;
+            }
+            drawNudgeBtn(rightX + 10, ctrlY, rightW - 20, actH, '↺ Reset All (0, 0, 1.0x)');
+
+            ctrlY += 28;
+
+            // --- 5. OVERLAY TOGGLES ---
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('VIEWPORT GUIDES', rightX + 10, ctrlY);
+            ctrlY += 8;
+
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, actW, actH)) {
+                this.showTileBox = !this.showTileBox;
+            }
+            if (inputManager.isClickInRect(rightX + 10 + actW + 6, ctrlY, actW, actH)) {
+                this.showCrosshair = !this.showCrosshair;
+            }
+
+            drawNudgeBtn(rightX + 10, ctrlY, actW, actH, this.showTileBox ? '🟩 Tile Box: ON' : '⬛ Tile Box: OFF');
+            drawNudgeBtn(rightX + 10 + actW + 6, ctrlY, actW, actH, this.showCrosshair ? '🟨 Center: ON' : '⬛ Center: OFF');
+
+            ctrlY += 28;
+
+            // --- 6. EXPORT / COPY JSON BUTTON ---
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 30)) {
+                try {
+                    const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
+                    navigator.clipboard.writeText(jsonStr);
+                    this.toastMsg = '📋 Offsets Copied to Clipboard!';
+                    this.toastTimer = 3.0;
+                } catch(e) {
+                    this.toastMsg = '💾 Offsets Saved in LocalStorage!';
+                    this.toastTimer = 3.0;
+                }
+            }
+
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 30);
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 30);
+            ctx.fillStyle = '#22c55e';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('📋 EXPORT / COPY JSON', rightX + rightW / 2, ctrlY + 19);
+
+        } else {
+            // === STATS & DOSSIER PANEL ===
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 13px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(currentEntity.name, rightX + 12, rightY + 48);
+
+            ctx.fillStyle = '#a855f7';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText(currentEntity.title, rightX + 12, rightY + 64);
+
+            // Equip Action Button
+            const equipBoxY = rightY + 72;
+            const activeSkin = spriteParser.getSkin(currentEntity.spriteKey);
+            const isCurrentlyEquipped = currentEntity.forcePack !== null && currentEntity.forcePack === activeSkin;
+
+            if (currentEntity.forcePack !== null) {
+                if (inputManager.isClickInRect(rightX + 10, equipBoxY, rightW - 20, 32)) {
+                    spriteParser.setSkin(currentEntity.spriteKey, currentEntity.forcePack);
+                    this.triggerEquipNotification(context, `✨ EQUIPPED: ${currentEntity.name}`);
+                }
+
+                if (isCurrentlyEquipped) {
+                    ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+                    ctx.fillRect(rightX + 10, equipBoxY, rightW - 20, 32);
+                    ctx.strokeStyle = '#22c55e';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(rightX + 10, equipBoxY, rightW - 20, 32);
+                    ctx.fillStyle = '#22c55e';
+                    ctx.font = 'bold 11px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('✔ ACTIVE IN GAME', rightX + rightW / 2, equipBoxY + 20);
+                } else {
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+                    ctx.fillRect(rightX + 10, equipBoxY, rightW - 20, 32);
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(rightX + 10, equipBoxY, rightW - 20, 32);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = 'bold 10px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('⚡ EQUIP SKIN (ENTER)', rightX + rightW / 2, equipBoxY + 20);
+                }
+            }
+
+            // Lore Description Box
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'left';
+            this.wrapText(ctx, currentEntity.lore, rightX + 12, rightY + 118, rightW - 24, 14);
+
+            // Combat Attributes Section
+            const statsBoxY = rightY + 200;
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('COMBAT ATTRIBUTES', rightX + 12, statsBoxY);
+
+            const stats = [
+                { label: 'HEALTH POOL', val: currentEntity.hp, color: '#22c55e' },
+                { label: 'ATTACK POWER', val: currentEntity.atk, color: '#ef4444' },
+                { label: 'DEFENSE RATING', val: currentEntity.def, color: '#3b82f6' },
+                { label: 'MOVEMENT SPEED', val: currentEntity.speed, color: '#f59e0b' }
+            ];
+
+            for (let s = 0; s < stats.length; s++) {
+                const sY = statsBoxY + 16 + s * 20;
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '9px monospace';
+                ctx.fillText(stats[s].label, rightX + 12, sY);
+
+                ctx.fillStyle = stats[s].color;
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(stats[s].val, rightX + rightW - 12, sY);
+                ctx.textAlign = 'left';
+            }
+
+            // Technical Hardware Specs
+            const techBoxY = rightY + 305;
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('SPRITE HARDWARE SPECS', rightX + 12, techBoxY);
+
+            const specs = [
+                { label: 'ACTIVE CLIP', val: currentAnimKey.toUpperCase() },
+                { label: 'FRAME SIZE', val: bitmap ? `${bitmap.width}x${bitmap.height} px` : 'N/A' },
+                { label: 'TOTAL FRAMES', val: `${totalFrames} frames` },
+                { label: 'FRAME INTERVAL', val: `${Math.round((entityAnimData ? entityAnimData.frameTime : 0.15) * 1000)} ms` }
+            ];
+
+            for (let t = 0; t < specs.length; t++) {
+                const tY = techBoxY + 16 + t * 20;
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '9px monospace';
+                ctx.fillText(specs[t].label, rightX + 12, tY);
 
                 ctx.fillStyle = '#38bdf8';
-                ctx.font = 'bold 10px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText('⚡ EQUIP SKIN (ENTER)', rightX + rightW / 2, equipBoxY + 22);
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(specs[t].val, rightX + rightW - 12, tY);
+                ctx.textAlign = 'left';
             }
         }
 
-        // Lore Description Box
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '9px monospace';
-        ctx.textAlign = 'left';
-        this.wrapText(ctx, currentEntity.lore, rightX + 12, rightY + 98, rightW - 24, 14);
+        // --- 6. TOAST NOTIFICATION BADGE ---
+        if (this.toastTimer > 0) {
+            this.toastTimer -= frameDt;
+            const toastW = 300;
+            const toastH = 28;
+            const toastX = (canvas.width - toastW) / 2;
+            const toastY = 48;
 
-        // Combat Attributes Section (y: rightY + 180)
-        const statsBoxY = rightY + 175;
-        ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText('COMBAT ATTRIBUTES', rightX + 12, statsBoxY);
+            ctx.save();
+            ctx.fillStyle = 'rgba(6, 11, 20, 0.95)';
+            ctx.fillRect(toastX, toastY, toastW, toastH);
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(toastX, toastY, toastW, toastH);
 
-        const stats = [
-            { label: 'HEALTH POOL', val: currentEntity.hp, color: '#22c55e' },
-            { label: 'ATTACK POWER', val: currentEntity.atk, color: '#ef4444' },
-            { label: 'DEFENSE RATING', val: currentEntity.def, color: '#3b82f6' },
-            { label: 'MOVEMENT SPEED', val: currentEntity.speed, color: '#f59e0b' }
-        ];
-
-        for (let s = 0; s < stats.length; s++) {
-            const sY = statsBoxY + 16 + s * 20;
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '9px monospace';
-            ctx.fillText(stats[s].label, rightX + 12, sY);
-
-            ctx.fillStyle = stats[s].color;
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'right';
-            ctx.fillText(stats[s].val, rightX + rightW - 12, sY);
-            ctx.textAlign = 'left';
+            ctx.fillStyle = '#86efac';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.toastMsg, toastX + toastW / 2, toastY + 18);
+            ctx.restore();
         }
 
-        // Technical Asset Specifications (y: rightY + 280)
-        const techBoxY = rightY + 275;
-        ctx.fillStyle = '#64748b';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText('SPRITE HARDWARE SPECS', rightX + 12, techBoxY);
-
-        const specs = [
-            { label: 'ACTIVE CLIP', val: currentAnimKey.toUpperCase() },
-            { label: 'FRAME SIZE', val: bitmap ? `${bitmap.width}x${bitmap.height} px` : 'N/A' },
-            { label: 'TOTAL FRAMES', val: `${totalFrames} frames` },
-            { label: 'FRAME INTERVAL', val: `${Math.round((entityAnimData ? entityAnimData.frameTime : 0.15) * 1000)} ms` }
-        ];
-
-        for (let t = 0; t < specs.length; t++) {
-            const tY = techBoxY + 16 + t * 20;
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '9px monospace';
-            ctx.fillText(specs[t].label, rightX + 12, tY);
-
-            ctx.fillStyle = '#38bdf8';
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'right';
-            ctx.fillText(specs[t].val, rightX + rightW - 12, tY);
-            ctx.textAlign = 'left';
-        }
-
-        // --- 6. FOOTER CONTROLS CHEATSHEET (y: 502, h: 32) ---
+        // --- 7. FOOTER CONTROLS CHEATSHEET (y: 502, h: 32) ---
         const footerY = 502;
         ctx.fillStyle = '#080e1a';
         ctx.fillRect(0, footerY, canvas.width, 38);
@@ -1216,7 +1604,7 @@ export class UISystem {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('CONTROLS: [A/D] Select Asset • [W/S] Select Animation • [ENTER] Equip Skin • [SPACE] Pause • [Z] Zoom • [C] Flip • [J/K] Step Frame • [ESC/V] Exit', canvas.width / 2, footerY + 22);
+        ctx.fillText('ALIGNMENT EDITOR: [Drag Preview Stage] Move Sprite • [Buttons] Fine-Tune X / Y / Scale • [A/D] Select Entity • [W/S] Select Clip • [ESC/V] Exit', canvas.width / 2, footerY + 22);
     }
 
     formatClipName(clipKey) {

@@ -4,6 +4,64 @@ import { AnimationData } from './AnimationData.js';
 export class SpriteParser {
   constructor() {
     this.cache = new Map(); // "entityId_animationName_frameIndex" -> ImageBitmap
+    this.offsets = this.loadOffsets();
+  }
+
+  loadOffsets() {
+    try {
+      const saved = localStorage.getItem('tempest_sprite_offsets');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      rimuru: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      goblin: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      goblin_archer: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      serpent: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      magisteel: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      hipokute: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      monolith: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      portal: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      chest: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      urn: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      torch: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      campfire: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      spikes: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      stalactite: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      spore_shroom: { offsetX: 0, offsetY: 0, scale: 1.0 },
+      acid_vent: { offsetX: 0, offsetY: 0, scale: 1.0 }
+    };
+  }
+
+  saveOffsets() {
+    try {
+      localStorage.setItem('tempest_sprite_offsets', JSON.stringify(this.offsets));
+    } catch (e) {}
+  }
+
+  getOffset(entityKey, animKey = null) {
+    if (animKey && this.offsets[`${entityKey}_${animKey}`]) {
+      return this.offsets[`${entityKey}_${animKey}`];
+    }
+    if (this.offsets[entityKey]) {
+      return this.offsets[entityKey];
+    }
+    return { offsetX: 0, offsetY: 0, scale: 1.0 };
+  }
+
+  setOffset(entityKey, animKey, offsetX, offsetY, scale = 1.0, perAnim = false) {
+    const key = perAnim && animKey ? `${entityKey}_${animKey}` : entityKey;
+    this.offsets[key] = {
+      offsetX: Math.round(offsetX),
+      offsetY: Math.round(offsetY),
+      scale: parseFloat(scale.toFixed(2))
+    };
+    this.saveOffsets();
+  }
+
+  resetOffset(entityKey, animKey = null, perAnim = false) {
+    const key = perAnim && animKey ? `${entityKey}_${animKey}` : entityKey;
+    this.offsets[key] = { offsetX: 0, offsetY: 0, scale: 1.0 };
+    this.saveOffsets();
   }
 
   getSkin(entityKey) {

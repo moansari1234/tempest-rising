@@ -85,6 +85,10 @@ export class InputManager {
     return this.mouseX >= x && this.mouseX <= x + w && this.mouseY >= y && this.mouseY <= y + h;
   }
 
+  isMouseDownInRect(x, y, w, h) {
+    return this.mouseClicked && this.mouseX >= x && this.mouseX <= x + w && this.mouseY >= y && this.mouseY <= y + h;
+  }
+
   // Check if any key mapped to an action is currently held down
   isActionHeld(action) {
     const keysForAction = this.actionMap[action];
