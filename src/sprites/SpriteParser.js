@@ -56,13 +56,19 @@ export class SpriteParser {
       }
     }
 
-    // 3. Load Rimuru Pack 2 (Arcade HD) and Goblin Archer v2 (Pack 2)
+    // 3. Load Pack 2 Remastered Variants
     const v2Packs = {
       rimuru_v2: {
         idle: 4, run: 4, jump: 4, attack_light: 4, attack_heavy: 4,
         predator: 4, special: 2, hurt: 2, death: 4, victory: 4
       },
       goblin_archer_v2: {
+        idle: 4, run: 4, attack: 4, hurt: 2, death: 4
+      },
+      goblin_v2: {
+        idle: 4, run: 4, attack: 4, hurt: 2, death: 4
+      },
+      serpent_v2: {
         idle: 4, run: 4, attack: 4, hurt: 2, death: 4
       }
     };
@@ -100,6 +106,12 @@ export class SpriteParser {
         if (this.cache.has(v2Key)) return this.cache.get(v2Key);
       } else if (entityKey === 'goblin_archer') {
         const v2Key = `goblin_archer_v2_${animKey}_${frameIndex}`;
+        if (this.cache.has(v2Key)) return this.cache.get(v2Key);
+      } else if (entityKey === 'goblin') {
+        const v2Key = `goblin_v2_${animKey}_${frameIndex}`;
+        if (this.cache.has(v2Key)) return this.cache.get(v2Key);
+      } else if (entityKey === 'serpent' || entityKey === 'boss_serpent') {
+        const v2Key = `serpent_v2_${animKey}_${frameIndex}`;
         if (this.cache.has(v2Key)) return this.cache.get(v2Key);
       }
     }
