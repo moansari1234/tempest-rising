@@ -4,18 +4,18 @@ export class MainMenuView {
     constructor() {
         this.titleBgImg = new Image();
         this.titleBgImg.src = '/public/sprites/backgrounds/title_bg.jpg';
+        this.selectedIdx = 0;
         
-        // Floating Magicule Motes for Title Screen Atmosphere
+        // Ambient subtle magicule motes
         this.particles = [];
-        for (let i = 0; i < 28; i++) {
+        for (let i = 0; i < 20; i++) {
             this.particles.push({
                 x: Math.random() * 960,
                 y: Math.random() * 540,
-                size: Math.random() * 2.5 + 1,
-                speedY: -(Math.random() * 15 + 10),
-                speedX: (Math.random() - 0.5) * 8,
-                alpha: Math.random() * 0.7 + 0.3,
-                color: Math.random() > 0.4 ? '#38bdf8' : '#a855f7'
+                size: Math.random() * 2 + 0.8,
+                speedY: -(Math.random() * 12 + 6),
+                alpha: Math.random() * 0.5 + 0.2,
+                color: Math.random() > 0.5 ? '#38bdf8' : '#818cf8'
             });
         }
     }
@@ -24,239 +24,184 @@ export class MainMenuView {
         const { inputManager, gameStateManager, audio } = context;
         const now = Date.now() / 1000;
 
-        // --- 1. TITLE BACKGROUND ARTWORK ---
+        // --- 1. CLEAN CINEMATIC BACKGROUND ---
         if (this.titleBgImg && this.titleBgImg.complete && this.titleBgImg.naturalWidth > 0) {
             ctx.drawImage(this.titleBgImg, 0, 0, canvas.width, canvas.height);
             
-            // Atmospheric Vignette & Deep Blue Gradient
+            // Rich dark gradient overlay for high contrast and readability
             const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, 'rgba(5, 10, 20, 0.45)');
-            grad.addColorStop(0.4, 'rgba(5, 10, 20, 0.25)');
-            grad.addColorStop(0.8, 'rgba(5, 10, 20, 0.75)');
-            grad.addColorStop(1, 'rgba(3, 7, 18, 0.95)');
+            grad.addColorStop(0, 'rgba(4, 7, 14, 0.45)');
+            grad.addColorStop(0.5, 'rgba(4, 7, 14, 0.60)');
+            grad.addColorStop(1, 'rgba(4, 7, 14, 0.92)');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
-            ctx.fillStyle = '#030712';
+            ctx.fillStyle = '#050a12';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // --- 2. DRIFTING MAGICULE PARTICLES ---
+        // --- 2. AMBIENT PARTICLES ---
         ctx.save();
         for (const p of this.particles) {
             p.y += p.speedY * 0.016;
-            p.x += p.speedX * 0.016;
             if (p.y < -10) {
                 p.y = canvas.height + 10;
                 p.x = Math.random() * canvas.width;
             }
-            const pulse = Math.sin(now * 3 + p.x) * 0.2 + 0.8;
-            ctx.globalAlpha = p.alpha * pulse;
+            ctx.globalAlpha = p.alpha;
             ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-            ctx.shadowBlur = 8;
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
 
-        // --- 3. GAME TITLE LOGO & TYPOGRAPHY ---
-        const titleCenterX = canvas.width / 2;
-        const titleCenterY = canvas.height * 0.26;
+        // --- 3. CINEMATIC TITLE LOGO ---
+        const cx = canvas.width / 2;
+        const titleY = 110;
 
         ctx.save();
-        // Japanese Lore Subheading
-        ctx.font = 'bold 11px "Rajdhani", "Orbitron", monospace';
-        ctx.fillStyle = '#facc15';
+        // Subtle anime badge header
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#94a3b8';
         ctx.textAlign = 'center';
-        ctx.letterSpacing = '4px';
-        ctx.shadowColor = '#facc15';
-        ctx.shadowBlur = 6;
-        ctx.fillText('« 転生したらスライムだった件 • THAT TIME I GOT REINCARNATED AS A SLIME »', titleCenterX, titleCenterY - 44);
+        ctx.fillText('THAT TIME I GOT REINCARNATED AS A SLIME', cx, titleY - 34);
 
-        // Main Title Header: TENSEI SLIME
-        ctx.font = '900 44px "Cinzel Decorative", "Orbitron", serif';
+        // Main Title
+        ctx.font = 'bold 36px monospace';
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 24;
-        ctx.fillText('TENSEI SLIME', titleCenterX, titleCenterY);
+        ctx.shadowColor = 'rgba(56, 189, 248, 0.6)';
+        ctx.shadowBlur = 16;
+        ctx.fillText('TENSEI SLIME', cx, titleY);
 
-        // Secondary Title Header: TEMPEST RISING
-        const pulseGlow = Math.sin(now * 4) * 6 + 18;
-        ctx.font = '900 28px "Orbitron", "Rajdhani", sans-serif';
-        const titleGrad = ctx.createLinearGradient(titleCenterX - 200, 0, titleCenterX + 200, 0);
-        titleGrad.addColorStop(0, '#38bdf8');
-        titleGrad.addColorStop(0.5, '#e0f2fe');
-        titleGrad.addColorStop(1, '#a855f7');
-        ctx.fillStyle = titleGrad;
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = pulseGlow;
-        ctx.fillText('⚡ TEMPEST RISING ⚡', titleCenterX, titleCenterY + 34);
-
-        // Ornamental Decorative Divider
+        // Subtitle
         ctx.shadowBlur = 0;
+        ctx.font = 'bold 16px monospace';
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText('◆ ────────── ❖ GREAT SAGE ENGINE v2.5 ❖ ────────── ◆', titleCenterX, titleCenterY + 54);
+        ctx.fillText('— TEMPEST RISING —', cx, titleY + 28);
         ctx.restore();
 
-        // --- 4. INTERACTIVE GAME BUTTONS ---
-        const btnW = 320;
-        const btnH = 44;
-        const btnStartX = (canvas.width - btnW) / 2;
-        const firstBtnY = canvas.height * 0.49;
-        const btnSpacing = 54;
-
+        // --- 4. SLEEK HORIZONTAL MENU SELECTOR ---
         const isContinueUnlocked = localStorage.getItem('tempest_save_boss_defeated') === 'true';
 
-        const buttons = [
+        const menuItems = [
             {
                 id: 'start',
-                label: 'START GAME',
-                sub: 'Embark into Whispering Caverns',
+                title: 'START GAME',
+                desc: 'Enter Whispering Caverns',
                 key: 'Z',
-                color: '#38bdf8',
-                hoverColor: '#7dd3fc',
                 enabled: true
             },
             {
                 id: 'assets',
-                label: 'ASSET GALLERY & SKINS',
-                sub: 'Inspect Models & Align Offsets',
+                title: 'ASSET STUDIO & SKINS',
+                desc: 'Inspect models, tune speeds & offsets',
                 key: 'V',
-                color: '#a855f7',
-                hoverColor: '#c084fc',
                 enabled: true
             },
             {
                 id: 'continue',
-                label: 'CONTINUE CAMPAIGN',
-                sub: isContinueUnlocked ? 'Resume Saved Expedition' : 'Beat Boss to Unlock Checkpoint',
+                title: 'CONTINUE CAMPAIGN',
+                desc: isContinueUnlocked ? 'Resume saved progress' : 'Defeat Chapter Boss to Unlock',
                 key: 'C',
-                color: isContinueUnlocked ? '#22c55e' : '#475569',
-                hoverColor: isContinueUnlocked ? '#4ade80' : '#475569',
                 enabled: isContinueUnlocked
             }
         ];
 
-        for (let i = 0; i < buttons.length; i++) {
-            const btn = buttons[i];
-            const btnY = firstBtnY + i * btnSpacing;
-            const isHover = inputManager.isHoverInRect(btnStartX, btnY, btnW, btnH);
-            const isClick = inputManager.isClickInRect(btnStartX, btnY, btnW, btnH);
+        // Keyboard navigation (W/S or Up/Down)
+        if (inputManager.isActionJustPressed('jump')) {
+            this.selectedIdx = (this.selectedIdx - 1 + menuItems.length) % menuItems.length;
+        } else if (inputManager.isActionJustPressed('crouch')) {
+            this.selectedIdx = (this.selectedIdx + 1) % menuItems.length;
+        }
+
+        const startY = 220;
+        const rowH = 48;
+        const menuW = 460;
+        const menuX = (canvas.width - menuW) / 2;
+
+        for (let i = 0; i < menuItems.length; i++) {
+            const item = menuItems[i];
+            const itemY = startY + i * (rowH + 12);
+            const isHover = inputManager.isHoverInRect(menuX, itemY, menuW, rowH);
+            const isSelected = i === this.selectedIdx || isHover;
+
+            if (isHover) this.selectedIdx = i;
 
             // Handle Click
-            if (isClick && btn.enabled) {
-                if (btn.id === 'start' || btn.id === 'continue') {
+            if (inputManager.isClickInRect(menuX, itemY, menuW, rowH) && item.enabled) {
+                if (item.id === 'start' || item.id === 'continue') {
                     gameStateManager.setState(GameState.PLAYING);
                     if (audio) audio.playBGM();
-                } else if (btn.id === 'assets') {
+                } else if (item.id === 'assets') {
                     gameStateManager.setState(GameState.ASSETS);
                 }
             }
 
             ctx.save();
-            // Button Glass Background
-            const bgGrad = ctx.createLinearGradient(btnStartX, btnY, btnStartX + btnW, btnY + btnH);
-            if (btn.enabled) {
-                if (isHover) {
-                    bgGrad.addColorStop(0, 'rgba(15, 23, 42, 0.95)');
-                    bgGrad.addColorStop(1, 'rgba(30, 58, 138, 0.6)');
-                } else {
-                    bgGrad.addColorStop(0, 'rgba(10, 15, 26, 0.88)');
-                    bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.88)');
-                }
-            } else {
-                bgGrad.addColorStop(0, 'rgba(15, 23, 42, 0.5)');
-                bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.5)');
-            }
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(btnStartX, btnY, btnW, btnH);
+            if (isSelected && item.enabled) {
+                // Subtle horizontal glow beam
+                const grad = ctx.createLinearGradient(menuX, 0, menuX + menuW, 0);
+                grad.addColorStop(0, 'rgba(56, 189, 248, 0.0)');
+                grad.addColorStop(0.2, 'rgba(56, 189, 248, 0.14)');
+                grad.addColorStop(0.8, 'rgba(56, 189, 248, 0.14)');
+                grad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(menuX, itemY, menuW, rowH);
 
-            // Border & Glow
-            ctx.strokeStyle = isHover && btn.enabled ? btn.hoverColor : (btn.enabled ? btn.color : '#334155');
-            ctx.lineWidth = isHover && btn.enabled ? 2 : 1.2;
-            if (isHover && btn.enabled) {
-                ctx.shadowColor = btn.color;
-                ctx.shadowBlur = 12;
-            }
-            ctx.strokeRect(btnStartX, btnY, btnW, btnH);
+                // Thin accent line below active item
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(menuX + 40, itemY + rowH - 1);
+                ctx.lineTo(menuX + menuW - 40, itemY + rowH - 1);
+                ctx.stroke();
 
-            // Decorative Corner Bracket Accents
-            const bracketSize = 6;
-            ctx.fillStyle = btn.enabled ? btn.color : '#475569';
-            // Top-Left
-            ctx.fillRect(btnStartX, btnY, bracketSize, 2);
-            ctx.fillRect(btnStartX, btnY, 2, bracketSize);
-            // Top-Right
-            ctx.fillRect(btnStartX + btnW - bracketSize, btnY, bracketSize, 2);
-            ctx.fillRect(btnStartX + btnW - 2, btnY, 2, bracketSize);
-            // Bottom-Left
-            ctx.fillRect(btnStartX, btnY + btnH - 2, bracketSize, 2);
-            ctx.fillRect(btnStartX, btnY + btnH - bracketSize, 2, bracketSize);
-            // Bottom-Right
-            ctx.fillRect(btnStartX + btnW - bracketSize, btnY + btnH - 2, bracketSize, 2);
-            ctx.fillRect(btnStartX + btnW - 2, btnY + btnH - bracketSize, 2, bracketSize);
-
-            // Left Key Badge Pill
-            const pillW = 34;
-            const pillH = 22;
-            const pillX = btnStartX + 12;
-            const pillY = btnY + (btnH - pillH) / 2;
-            ctx.fillStyle = btn.enabled ? 'rgba(56, 189, 248, 0.15)' : 'rgba(30, 41, 59, 0.4)';
-            ctx.fillRect(pillX, pillY, pillW, pillH);
-            ctx.strokeStyle = btn.enabled ? btn.color : '#475569';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(pillX, pillY, pillW, pillH);
-
-            ctx.font = 'bold 11px "Orbitron", monospace';
-            ctx.fillStyle = btn.enabled ? '#ffffff' : '#64748b';
-            ctx.textAlign = 'center';
-            ctx.fillText(btn.key, pillX + pillW / 2, pillY + 15);
-
-            // Button Main Label
-            ctx.font = 'bold 13px "Orbitron", "Rajdhani", sans-serif';
-            ctx.fillStyle = btn.enabled ? (isHover ? '#ffffff' : btn.color) : '#64748b';
-            ctx.textAlign = 'left';
-            ctx.fillText(btn.label, pillX + pillW + 14, btnY + 20);
-
-            // Button Subtitle Description
-            ctx.font = '9px "Rajdhani", monospace';
-            ctx.fillStyle = btn.enabled ? '#94a3b8' : '#475569';
-            ctx.fillText(btn.sub, pillX + pillW + 14, btnY + 34);
-
-            // Right Arrow Prompt
-            if (btn.enabled) {
-                const bounceX = isHover ? Math.sin(now * 10) * 3 : 0;
-                ctx.fillStyle = btn.color;
-                ctx.font = 'bold 12px monospace';
+                // Active cursor arrow
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 14px monospace';
                 ctx.textAlign = 'right';
-                ctx.fillText('▶', btnStartX + btnW - 14 + bounceX, btnY + 27);
+                ctx.fillText('▶', menuX + 24, itemY + 28);
             }
+
+            // Key badge
+            ctx.fillStyle = item.enabled ? (isSelected ? '#38bdf8' : '#64748b') : '#334155';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(`[${item.key}]`, menuX + 38, itemY + 24);
+
+            // Item Title
+            ctx.fillStyle = item.enabled ? (isSelected ? '#ffffff' : '#cbd5e1') : '#475569';
+            ctx.font = isSelected ? 'bold 14px monospace' : '14px monospace';
+            ctx.fillText(item.title, menuX + 76, itemY + 24);
+
+            // Item Description
+            ctx.fillStyle = item.enabled ? (isSelected ? '#94a3b8' : '#64748b') : '#334155';
+            ctx.font = '10px monospace';
+            ctx.fillText(item.desc, menuX + 76, itemY + 40);
 
             ctx.restore();
         }
 
-        // --- 5. BOTTOM CONTROLS CHEATSHEET STRIP ---
-        const footerH = 34;
-        const footerY = canvas.height - footerH;
-
-        ctx.fillStyle = 'rgba(6, 11, 20, 0.94)';
-        ctx.fillRect(0, footerY, canvas.width, footerH);
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(0, footerY, canvas.width, footerH);
-
-        ctx.font = 'bold 10px "Rajdhani", "Orbitron", monospace';
-        ctx.fillStyle = '#94a3b8';
+        // --- 5. CLEAN BOTTOM CONTROLS FOOTER ---
+        ctx.save();
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#64748b';
         ctx.textAlign = 'center';
-        ctx.fillText('🎮 CONTROLS: [WASD / ARROWS] Move  •  [SPACE] Jump  •  [Z / X] Light / Heavy Attack  •  [C] Parry  •  [E] Devour  •  [SHIFT] Dash', canvas.width / 2, footerY + 21);
+        ctx.fillText('WASD / Arrows to Navigate  •  Press [Z] or Enter to Select  •  Press [V] for Asset Studio', canvas.width / 2, canvas.height - 24);
+        ctx.restore();
 
-        // --- 6. KEYBOARD SHORTCUTS HANDLER ---
+        // --- 6. GLOBAL KEYBOARD SHORTCUTS ---
         if (inputManager.isActionJustPressed('attackLight')) {
-            gameStateManager.setState(GameState.PLAYING);
-            if (audio) audio.playBGM();
+            const current = menuItems[this.selectedIdx];
+            if (current && current.enabled) {
+                if (current.id === 'start' || current.id === 'continue') {
+                    gameStateManager.setState(GameState.PLAYING);
+                    if (audio) audio.playBGM();
+                } else if (current.id === 'assets') {
+                    gameStateManager.setState(GameState.ASSETS);
+                }
+            }
         } else if (inputManager.isActionJustPressed('viewAssets')) {
             gameStateManager.setState(GameState.ASSETS);
         } else if (inputManager.isActionJustPressed('parry') && isContinueUnlocked) {
