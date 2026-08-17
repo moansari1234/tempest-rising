@@ -23,6 +23,8 @@ export class UISystem {
         this.assetFacing = 'right';
         this.titleBgImg = new Image();
         this.titleBgImg.src = '/public/sprites/backgrounds/title_bg.jpg';
+        this.loadingImg = new Image();
+        this.loadingImg.src = '/public/sprites/backgrounds/loading_screen_1.jpg';
         
         // Alignment Editor State
         this.assetTab = 'editor'; // 'editor' or 'dossier'
@@ -734,13 +736,40 @@ export class UISystem {
     }
 
     renderLevelTransition(ctx, canvas, context) {
-        ctx.fillStyle = 'rgba(5, 10, 16, 0.6)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (this.loadingImg && this.loadingImg.complete && this.loadingImg.naturalWidth > 0) {
+            ctx.drawImage(this.loadingImg, 0, 0, canvas.width, canvas.height);
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, 'rgba(5, 10, 16, 0.4)');
+            grad.addColorStop(1, 'rgba(5, 10, 16, 0.85)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = 'rgba(5, 10, 16, 0.85)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
         
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 24px monospace';
+        ctx.font = 'bold 26px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('WARPING TO NEXT FLOOR...', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('ENTERING THE WHISPERING CAVERNS', canvas.width / 2, canvas.height / 2 - 20);
+
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText('« REPORT: GREAT SAGE — Analyzing Subterranean Magicules & Flora... »', canvas.width / 2, canvas.height / 2 + 20);
+
+        // Progress bar simulation
+        const pBarW = 320;
+        const pBarH = 6;
+        const pBarX = (canvas.width - pBarW) / 2;
+        const pBarY = canvas.height / 2 + 45;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+        ctx.fillRect(pBarX, pBarY, pBarW, pBarH);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeRect(pBarX, pBarY, pBarW, pBarH);
+
+        const pulseW = ((Date.now() / 8) % (pBarW - 4));
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(pBarX + 2, pBarY + 2, pulseW, pBarH - 4);
     }
 
     renderAssetViewer(ctx, canvas, context, dt) {
