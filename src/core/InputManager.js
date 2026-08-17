@@ -66,11 +66,17 @@ export class InputManager {
   }
 
   onKeyDown(e) {
+    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+      e.preventDefault();
+    }
     this.keys[e.key] = true;
     this.inputTimestamps[e.key] = performance.now();
   }
 
   onKeyUp(e) {
+    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+      e.preventDefault();
+    }
     this.keys[e.key] = false;
   }
 

@@ -18,13 +18,15 @@ export class UISystem {
         
         // Alignment Editor State
         this.assetTab = 'editor'; // 'editor' or 'dossier'
-        this.editorPerAnim = false; // Global entity vs per-clip offset
+        this.editorScope = 'frame'; // 'frame', 'clip', or 'global'
         this.showTileBox = true;
         this.showCrosshair = true;
         this.showGroundLine = true;
         this.isDraggingSprite = false;
-        this.dragPrevX = 0;
-        this.dragPrevY = 0;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.dragInitialOffX = 0;
+        this.dragInitialOffY = 0;
         this.toastMsg = null;
         this.toastTimer = 0;
 
@@ -951,8 +953,12 @@ export class UISystem {
             }
         }
 
-        // Active Offset Lookup
-        const activeOffset = spriteParser.getOffset(currentEntity.spriteKey, this.editorPerAnim ? currentAnimKey : null);
+        // Active Offset Lookup (Frame-Level, Clip-Level, or Global-Level Scope)
+        const activeOffset = spriteParser.getOffset(
+            currentEntity.spriteKey,
+            this.editorScope !== 'global' ? currentAnimKey : null,
+            this.editorScope === 'frame' ? this.assetFrameIdx : null
+        );
         let curOffX = activeOffset.offsetX || 0;
         let curOffY = activeOffset.offsetY || 0;
         let curScale = activeOffset.scale !== undefined ? activeOffset.scale : 1.0;
@@ -972,7 +978,7 @@ export class UISystem {
                 const totalDeltaY = (inputManager.mouseY - this.dragStartY) / (this.assetZoom || 1);
                 curOffX = Math.round(this.dragInitialOffX + totalDeltaX);
                 curOffY = Math.round(this.dragInitialOffY + totalDeltaY);
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
         } else {
             this.isDraggingSprite = false;
@@ -1114,34 +1120,103 @@ export class UISystem {
         ctx.textAlign = 'center';
         const offXSign = curOffX >= 0 ? '+' : '';
         const offYSign = curOffY >= 0 ? '+' : '';
-        ctx.fillText(`OFFSET: X: ${offXSign}${Math.round(curOffX)}px, Y: ${offYSign}${Math.round(curOffY)}px | SCALE: ${curScale.toFixed(2)}x | DRAG VIEWPORT TO MOVE`, studioX + studioW / 2, groundLineY + 20);
+        const scopeLabel = this.editorScope === 'frame' ? `FRAME #${this.assetFrameIdx}` : (this.editorScope === 'clip' ? `CLIP (${currentAnimKey.toUpperCase()})` : 'GLOBAL');
+        ctx.fillText(`SCOPE: [${scopeLabel}] | X: ${offXSign}${Math.round(curOffX)}px, Y: ${offYSign}${Math.round(curOffY)}px | SCALE: ${curScale.toFixed(2)}x`, studioX + studioW / 2, groundLineY + 20);
 
         // Studio Playback State Badge (Top-Left)
+        if (inputManager.isClickInRect(studioX + 10, studioY + 10, 85, 20)) {
+            this.assetIsPaused = !this.assetIsPaused;
+        }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + 10, studioY + 10, 95, 20);
+        ctx.fillRect(studioX + 10, studioY + 10, 85, 20);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + 10, studioY + 10, 95, 20);
+        ctx.strokeRect(studioX + 10, studioY + 10, 85, 20);
         ctx.fillStyle = this.assetIsPaused ? '#f59e0b' : '#10b981';
-        ctx.font = 'bold 9px monospace';
+        ctx.font = 'bold 8px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED (SPACE)' : '▶ PLAYING (SPACE)', studioX + 57, studioY + 23);
+        ctx.fillText(this.assetIsPaused ? '⏸ PAUSED' : '▶ PLAYING', studioX + 52, studioY + 23);
 
         // Zoom Badge (Top-Right)
-        if (inputManager.isClickInRect(studioX + studioW - 80, studioY + 10, 70, 20)) {
+        if (inputManager.isClickInRect(studioX + studioW - 75, studioY + 10, 65, 20)) {
             this.assetZoom = this.assetZoom >= 4 ? 1 : this.assetZoom + 1;
         }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(studioX + studioW - 80, studioY + 10, 70, 20);
+        ctx.fillRect(studioX + studioW - 75, studioY + 10, 65, 20);
         ctx.strokeStyle = '#475569';
-        ctx.strokeRect(studioX + studioW - 80, studioY + 10, 70, 20);
+        ctx.strokeRect(studioX + studioW - 75, studioY + 10, 65, 20);
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText(`ZOOM: ${this.assetZoom}x (Z)`, studioX + studioW - 45, studioY + 23);
+        ctx.font = 'bold 8px monospace';
+        ctx.fillText(`ZOOM: ${this.assetZoom}x`, studioX + studioW - 42, studioY + 23);
 
-        // Frame Ticker Scrubber Bar (Top-Center)
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px monospace';
+        // --- INTERACTIVE FRAME STRIP SCRUBBER (Top-Center) ---
+        const scrubberStartX = studioX + 102;
+        const scrubberW = studioW - 184;
+        const scrubberY = studioY + 10;
+        const scrubberH = 20;
+
+        // Step Back Button [◀]
+        if (inputManager.isClickInRect(scrubberStartX, scrubberY, 20, scrubberH)) {
+            this.assetIsPaused = true;
+            this.assetFrameIdx = (this.assetFrameIdx - 1 + totalFrames) % totalFrames;
+        }
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+        ctx.fillRect(scrubberStartX, scrubberY, 20, scrubberH);
+        ctx.strokeStyle = '#475569';
+        ctx.strokeRect(scrubberStartX, scrubberY, 20, scrubberH);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`[◀ J]  Frame ${this.assetFrameIdx + 1} / ${totalFrames}  [K ▶]`, studioX + studioW / 2, studioY + 23);
+        ctx.fillText('◀', scrubberStartX + 10, scrubberY + 14);
+
+        // Step Forward Button [▶]
+        const nextBtnX = scrubberStartX + scrubberW - 20;
+        if (inputManager.isClickInRect(nextBtnX, scrubberY, 20, scrubberH)) {
+            this.assetIsPaused = true;
+            this.assetFrameIdx = (this.assetFrameIdx + 1) % totalFrames;
+        }
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+        ctx.fillRect(nextBtnX, scrubberY, 20, scrubberH);
+        ctx.strokeStyle = '#475569';
+        ctx.strokeRect(nextBtnX, scrubberY, 20, scrubberH);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText('▶', nextBtnX + 10, scrubberY + 14);
+
+        // Individual Clickable Frame Pills
+        const pillsAreaX = scrubberStartX + 24;
+        const pillsAreaW = scrubberW - 48;
+        const pillW = Math.min(26, Math.max(16, Math.floor((pillsAreaW - (totalFrames - 1) * 2) / totalFrames)));
+        const totalPillsWidth = totalFrames * pillW + (totalFrames - 1) * 2;
+        const pillsStartX = pillsAreaX + (pillsAreaW - totalPillsWidth) / 2;
+
+        for (let f = 0; f < totalFrames; f++) {
+            const pX = pillsStartX + f * (pillW + 2);
+            const isFActive = f === this.assetFrameIdx;
+
+            if (inputManager.isClickInRect(pX, scrubberY, pillW, scrubberH)) {
+                this.assetFrameIdx = f;
+                this.assetIsPaused = true;
+            }
+
+            if (isFActive) {
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(pX, scrubberY, pillW, scrubberH);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(pX, scrubberY, pillW, scrubberH);
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 9px monospace';
+                ctx.fillText(`F${f}`, pX + pillW / 2, scrubberY + 14);
+            } else {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+                ctx.fillRect(pX, scrubberY, pillW, scrubberH);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(pX, scrubberY, pillW, scrubberH);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '8px monospace';
+                ctx.fillText(`${f}`, pX + pillW / 2, scrubberY + 14);
+            }
+        }
 
         // --- BOTTOM OF CENTER COLUMN: ALL ANIMATION CLIPS MATRIX (y: 310, w: 440, h: 182) ---
         const matrixY = 310;
@@ -1241,7 +1316,7 @@ export class UISystem {
         ctx.fillStyle = this.assetTab === 'editor' ? '#38bdf8' : '#94a3b8';
         ctx.font = 'bold 9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('🛠️ ALIGNMENT', rightX + 6 + tab1W / 2, rightY + 22);
+        ctx.fillText('🛠️ ALIGNMENT', rightX + 6 + tab1W / 2, rightY + 17);
 
         // Tab 2 Button
         ctx.fillStyle = this.assetTab === 'dossier' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)';
@@ -1249,54 +1324,80 @@ export class UISystem {
         ctx.strokeStyle = this.assetTab === 'dossier' ? '#a855f7' : '#334155';
         ctx.strokeRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH);
         ctx.fillStyle = this.assetTab === 'dossier' ? '#a855f7' : '#94a3b8';
-        ctx.fillText('📊 STATS', rightX + 6 + tab1W + 4 + tab2W / 2, rightY + 22);
+        ctx.fillText('📊 STATS', rightX + 6 + tab1W + 4 + tab2W / 2, rightY + 17);
 
         if (this.assetTab === 'editor') {
-            // === ALIGNMENT EDITOR PANEL ===
-            let ctrlY = rightY + 38;
+            // === ALIGNMENT EDITOR PANEL (FRAME-LEVEL CONTROL) ===
+            let ctrlY = rightY + 36;
 
-            // Scope Toggle Button
-            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 22)) {
-                this.editorPerAnim = !this.editorPerAnim;
+            // --- 3-WAY SCOPE SELECTOR ---
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('EDITING SCOPE LEVEL:', rightX + 10, ctrlY);
+            ctrlY += 6;
+
+            const scopeBtnW = (rightW - 24) / 3;
+            const scopeBtnH = 20;
+
+            // Scope 1: Active Frame Only
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, scopeBtnW, scopeBtnH)) {
+                this.editorScope = 'frame';
             }
-            ctx.fillStyle = this.editorPerAnim ? 'rgba(234, 179, 8, 0.2)' : 'rgba(56, 189, 248, 0.15)';
-            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 22);
-            ctx.strokeStyle = this.editorPerAnim ? '#eab308' : '#38bdf8';
-            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 22);
-            ctx.fillStyle = this.editorPerAnim ? '#eab308' : '#38bdf8';
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(this.editorPerAnim ? `🔘 SCOPE: THIS CLIP (${currentAnimKey.toUpperCase()})` : '🔘 SCOPE: GLOBAL (ALL CLIPS)', rightX + rightW / 2, ctrlY + 15);
+            // Scope 2: Clip
+            if (inputManager.isClickInRect(rightX + 10 + scopeBtnW + 2, ctrlY, scopeBtnW, scopeBtnH)) {
+                this.editorScope = 'clip';
+            }
+            // Scope 3: Global Entity
+            if (inputManager.isClickInRect(rightX + 10 + (scopeBtnW + 2) * 2, ctrlY, scopeBtnW, scopeBtnH)) {
+                this.editorScope = 'global';
+            }
 
-            ctrlY += 28;
+            const drawScopePill = (x, y, w, h, label, active) => {
+                ctx.fillStyle = active ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.7)';
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeStyle = active ? '#38bdf8' : '#334155';
+                ctx.lineWidth = active ? 1.5 : 1;
+                ctx.strokeRect(x, y, w, h);
+                ctx.fillStyle = active ? '#38bdf8' : '#94a3b8';
+                ctx.font = 'bold 8px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, x + w / 2, y + 13);
+            };
+
+            drawScopePill(rightX + 10, ctrlY, scopeBtnW, scopeBtnH, `🎯 FRAME ${this.assetFrameIdx}`, this.editorScope === 'frame');
+            drawScopePill(rightX + 10 + scopeBtnW + 2, ctrlY, scopeBtnW, scopeBtnH, '🎬 CLIP', this.editorScope === 'clip');
+            drawScopePill(rightX + 10 + (scopeBtnW + 2) * 2, ctrlY, scopeBtnW, scopeBtnH, '🌐 GLOBAL', this.editorScope === 'global');
+
+            ctrlY += 26;
 
             // --- 1. OFFSET X CONTROLS ---
             ctx.fillStyle = '#cbd5e1';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'left';
             ctx.fillText('OFFSET X (HORIZONTAL PIVOT)', rightX + 10, ctrlY);
-            ctrlY += 8;
+            ctrlY += 6;
 
             const btnBW = 34;
-            const btnBH = 22;
+            const btnBH = 20;
             const rowX = rightX + 10;
 
             // Buttons: [-5] [-1] [Value] [+1] [+5]
             if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) {
                 curOffX -= 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) {
                 curOffX -= 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) {
                 curOffX += 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) {
                 curOffX += 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
 
             const drawNudgeBtn = (bx, by, bw, bh, text, active) => {
@@ -1307,7 +1408,7 @@ export class UISystem {
                 ctx.fillStyle = '#e2e8f0';
                 ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText(text, bx + bw / 2, by + 15);
+                ctx.fillText(text, bx + bw / 2, by + 14);
             };
 
             drawNudgeBtn(rowX, ctrlY, btnBW, btnBH, '-5');
@@ -1319,37 +1420,37 @@ export class UISystem {
             ctx.strokeStyle = '#38bdf8';
             ctx.strokeRect(rowX + 76, ctrlY, 62, btnBH);
             ctx.fillStyle = '#38bdf8';
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`${offXSign}${Math.round(curOffX)}px`, rowX + 107, ctrlY + 15);
+            ctx.fillText(`${offXSign}${Math.round(curOffX)}px`, rowX + 107, ctrlY + 14);
 
             drawNudgeBtn(rowX + 142, ctrlY, btnBW, btnBH, '+1');
             drawNudgeBtn(rowX + 180, ctrlY, btnBW, btnBH, '+5');
 
-            ctrlY += 30;
+            ctrlY += 26;
 
             // --- 2. OFFSET Y CONTROLS ---
             ctx.fillStyle = '#cbd5e1';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'left';
             ctx.fillText('OFFSET Y (VERTICAL PIVOT)', rightX + 10, ctrlY);
-            ctrlY += 8;
+            ctrlY += 6;
 
             if (inputManager.isClickInRect(rowX, ctrlY, btnBW, btnBH)) {
                 curOffY -= 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 38, ctrlY, btnBW, btnBH)) {
                 curOffY -= 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 142, ctrlY, btnBW, btnBH)) {
                 curOffY += 1;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 180, ctrlY, btnBW, btnBH)) {
                 curOffY += 5;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
 
             drawNudgeBtn(rowX, ctrlY, btnBW, btnBH, '-5');
@@ -1360,29 +1461,29 @@ export class UISystem {
             ctx.strokeStyle = '#38bdf8';
             ctx.strokeRect(rowX + 76, ctrlY, 62, btnBH);
             ctx.fillStyle = '#38bdf8';
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`${offYSign}${Math.round(curOffY)}px`, rowX + 107, ctrlY + 15);
+            ctx.fillText(`${offYSign}${Math.round(curOffY)}px`, rowX + 107, ctrlY + 14);
 
             drawNudgeBtn(rowX + 142, ctrlY, btnBW, btnBH, '+1');
             drawNudgeBtn(rowX + 180, ctrlY, btnBW, btnBH, '+5');
 
-            ctrlY += 30;
+            ctrlY += 26;
 
             // --- 3. SCALE CONTROLS ---
             ctx.fillStyle = '#cbd5e1';
             ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'left';
             ctx.fillText('SPRITE SCALE RATIO', rightX + 10, ctrlY);
-            ctrlY += 8;
+            ctrlY += 6;
 
             if (inputManager.isClickInRect(rowX, ctrlY, 56, btnBH)) {
                 curScale = Math.max(0.2, curScale - 0.1);
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
             if (inputManager.isClickInRect(rowX + 158, ctrlY, 56, btnBH)) {
                 curScale = Math.min(3.0, curScale + 0.1);
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
             }
 
             drawNudgeBtn(rowX, ctrlY, 56, btnBH, '-0.1x');
@@ -1392,33 +1493,46 @@ export class UISystem {
             ctx.strokeStyle = '#a855f7';
             ctx.strokeRect(rowX + 62, ctrlY, 90, btnBH);
             ctx.fillStyle = '#a855f7';
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`${curScale.toFixed(2)}x`, rowX + 107, ctrlY + 15);
+            ctx.fillText(`${curScale.toFixed(2)}x`, rowX + 107, ctrlY + 14);
 
             drawNudgeBtn(rowX + 158, ctrlY, 56, btnBH, '+0.1x');
 
-            ctrlY += 30;
+            ctrlY += 26;
 
-            // --- 4. PRESET ACTIONS ---
-            ctx.fillStyle = '#cbd5e1';
+            // --- 4. COPY FRAME OFFSET TO ALL FRAMES ACTION ---
+            const copyBtnH = 22;
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, copyBtnH)) {
+                spriteParser.copyFrameToAll(currentEntity.spriteKey, currentAnimKey, totalFrames, this.assetFrameIdx);
+                this.toastMsg = `📋 Copied Frame ${this.assetFrameIdx} offset to all ${totalFrames} frames!`;
+                this.toastTimer = 2.5;
+            }
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, copyBtnH);
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, copyBtnH);
+            ctx.fillStyle = '#eab308';
             ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'left';
-            ctx.fillText('PRESET ALIGNMENTS', rightX + 10, ctrlY);
-            ctrlY += 8;
+            ctx.textAlign = 'center';
+            ctx.fillText(`📋 COPY F${this.assetFrameIdx} OFFSET TO ALL FRAMES`, rightX + rightW / 2, ctrlY + 15);
 
+            ctrlY += 26;
+
+            // --- 5. PRESET ACTIONS ---
             const actW = (rightW - 26) / 2;
-            const actH = 22;
+            const actH = 20;
 
             if (inputManager.isClickInRect(rightX + 10, ctrlY, actW, actH)) {
                 curOffX = 0;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
                 this.toastMsg = '🎯 Centered X Pivot (0px)';
                 this.toastTimer = 2.0;
             }
             if (inputManager.isClickInRect(rightX + 10 + actW + 6, ctrlY, actW, actH)) {
                 curOffY = 0;
-                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
                 this.toastMsg = '⚓ Grounded Y to Floor';
                 this.toastTimer = 2.0;
             }
@@ -1426,24 +1540,18 @@ export class UISystem {
             drawNudgeBtn(rightX + 10, ctrlY, actW, actH, '🎯 Center X');
             drawNudgeBtn(rightX + 10 + actW + 6, ctrlY, actW, actH, '⚓ Ground Y');
 
-            ctrlY += 26;
+            ctrlY += 24;
 
             if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, actH)) {
-                spriteParser.resetOffset(currentEntity.spriteKey, currentAnimKey, this.editorPerAnim);
-                this.toastMsg = '↺ Offsets Reset to Default';
+                spriteParser.resetOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, this.editorScope);
+                this.toastMsg = `↺ Reset ${this.editorScope.toUpperCase()} Offsets`;
                 this.toastTimer = 2.0;
             }
-            drawNudgeBtn(rightX + 10, ctrlY, rightW - 20, actH, '↺ Reset All (0, 0, 1.0x)');
+            drawNudgeBtn(rightX + 10, ctrlY, rightW - 20, actH, `↺ Reset Active Scope (${this.editorScope.toUpperCase()})`);
 
-            ctrlY += 28;
+            ctrlY += 24;
 
-            // --- 5. OVERLAY TOGGLES ---
-            ctx.fillStyle = '#cbd5e1';
-            ctx.font = 'bold 9px monospace';
-            ctx.textAlign = 'left';
-            ctx.fillText('VIEWPORT GUIDES', rightX + 10, ctrlY);
-            ctrlY += 8;
-
+            // --- 6. OVERLAY TOGGLES ---
             if (inputManager.isClickInRect(rightX + 10, ctrlY, actW, actH)) {
                 this.showTileBox = !this.showTileBox;
             }
@@ -1454,14 +1562,14 @@ export class UISystem {
             drawNudgeBtn(rightX + 10, ctrlY, actW, actH, this.showTileBox ? '🟩 Tile Box: ON' : '⬛ Tile Box: OFF');
             drawNudgeBtn(rightX + 10 + actW + 6, ctrlY, actW, actH, this.showCrosshair ? '🟨 Center: ON' : '⬛ Center: OFF');
 
-            ctrlY += 28;
+            ctrlY += 24;
 
-            // --- 6. EXPORT / COPY JSON BUTTON ---
-            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 30)) {
+            // --- 7. EXPORT / COPY JSON BUTTON ---
+            if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, 26)) {
                 try {
                     const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
                     navigator.clipboard.writeText(jsonStr);
-                    this.toastMsg = '📋 Offsets Copied to Clipboard!';
+                    this.toastMsg = '📋 All Offsets Copied to Clipboard!';
                     this.toastTimer = 3.0;
                 } catch(e) {
                     this.toastMsg = '💾 Offsets Saved in LocalStorage!';
@@ -1470,14 +1578,14 @@ export class UISystem {
             }
 
             ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
-            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 30);
+            ctx.fillRect(rightX + 10, ctrlY, rightW - 20, 26);
             ctx.strokeStyle = '#22c55e';
             ctx.lineWidth = 1.5;
-            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 30);
+            ctx.strokeRect(rightX + 10, ctrlY, rightW - 20, 26);
             ctx.fillStyle = '#22c55e';
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 9px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('📋 EXPORT / COPY JSON', rightX + rightW / 2, ctrlY + 19);
+            ctx.fillText('📋 EXPORT / COPY JSON', rightX + rightW / 2, ctrlY + 17);
 
         } else {
             // === STATS & DOSSIER PANEL ===

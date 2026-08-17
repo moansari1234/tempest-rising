@@ -38,8 +38,12 @@ export class SpriteParser {
     } catch (e) {}
   }
 
-  getOffset(entityKey, animKey = null) {
-    if (animKey && this.offsets[`${entityKey}_${animKey}`]) {
+  getOffset(entityKey, animKey = null, frameIndex = null) {
+    if (animKey !== null && frameIndex !== null && frameIndex !== undefined) {
+      const frameKey = `${entityKey}_${animKey}_f${frameIndex}`;
+      if (this.offsets[frameKey]) return this.offsets[frameKey];
+    }
+    if (animKey !== null && this.offsets[`${entityKey}_${animKey}`]) {
       return this.offsets[`${entityKey}_${animKey}`];
     }
     if (this.offsets[entityKey]) {
@@ -48,8 +52,13 @@ export class SpriteParser {
     return { offsetX: 0, offsetY: 0, scale: 1.0 };
   }
 
-  setOffset(entityKey, animKey, offsetX, offsetY, scale = 1.0, perAnim = false) {
-    const key = perAnim && animKey ? `${entityKey}_${animKey}` : entityKey;
+  setOffset(entityKey, animKey, frameIndex, offsetX, offsetY, scale = 1.0, scope = 'frame') {
+    let key = entityKey;
+    if (scope === 'frame' && animKey && frameIndex !== null && frameIndex !== undefined) {
+      key = `${entityKey}_${animKey}_f${frameIndex}`;
+    } else if (scope === 'clip' && animKey) {
+      key = `${entityKey}_${animKey}`;
+    }
     this.offsets[key] = {
       offsetX: Math.round(offsetX),
       offsetY: Math.round(offsetY),
@@ -58,9 +67,33 @@ export class SpriteParser {
     this.saveOffsets();
   }
 
-  resetOffset(entityKey, animKey = null, perAnim = false) {
-    const key = perAnim && animKey ? `${entityKey}_${animKey}` : entityKey;
-    this.offsets[key] = { offsetX: 0, offsetY: 0, scale: 1.0 };
+  copyFrameToAll(entityKey, animKey, totalFrames, sourceFrameIdx) {
+    const src = this.getOffset(entityKey, animKey, sourceFrameIdx);
+    for (let f = 0; f < totalFrames; f++) {
+      this.offsets[`${entityKey}_${animKey}_f${f}`] = { ...src };
+    }
+    this.saveOffsets();
+  }
+
+  resetOffset(entityKey, animKey = null, frameIndex = null, scope = 'frame') {
+    let key = entityKey;
+    if (scope === 'frame' && animKey && frameIndex !== null && frameIndex !== undefined) {
+      key = `${entityKey}_${animKey}_f${frameIndex}`;
+      delete this.offsets[key];
+    } else if (scope === 'clip' && animKey) {
+      key = `${entityKey}_${animKey}`;
+      delete this.offsets[key];
+      // Also delete frame overrides for this clip
+      for (const k of Object.keys(this.offsets)) {
+        if (k.startsWith(`${entityKey}_${animKey}_f`)) delete this.offsets[k];
+      }
+    } else {
+      this.offsets[entityKey] = { offsetX: 0, offsetY: 0, scale: 1.0 };
+      // Delete all clip and frame overrides
+      for (const k of Object.keys(this.offsets)) {
+        if (k.startsWith(`${entityKey}_`)) delete this.offsets[k];
+      }
+    }
     this.saveOffsets();
   }
 

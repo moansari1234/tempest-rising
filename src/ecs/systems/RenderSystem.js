@@ -289,7 +289,7 @@ export class RenderSystem {
               displayH = bitmap.height * 2;
           }
           
-          const offset = spriteParser.getOffset(sprite.spriteKey, sprite.currentAnimation);
+          const offset = spriteParser.getOffset(sprite.spriteKey, sprite.currentAnimation, sprite.frameIndex);
           if (offset.scale && offset.scale !== 1.0) {
               displayW *= offset.scale;
               displayH *= offset.scale;
