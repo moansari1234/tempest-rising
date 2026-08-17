@@ -222,20 +222,21 @@ export class RenderSystem {
               displayH = bitmap.height * 2;
           }
           
+          let drawX = transform.x + transform.width / 2 - displayW / 2;
           const drawY = transform.y + transform.height - displayH;
           
           if (sprite.spriteKey === 'rimuru' && bitmap.width > 16) {
               // Wide attack slash sprite: anchor slime body at transform.x
+              drawX = transform.x;
               if (transform.facing === 'left') {
                   ctx.translate(transform.x + transform.width, drawY);
                   ctx.scale(-1, 1);
                   ctx.drawImage(bitmap, 0, 0, displayW, displayH);
               } else {
-                  ctx.drawImage(bitmap, transform.x, drawY, displayW, displayH);
+                  ctx.drawImage(bitmap, drawX, drawY, displayW, displayH);
               }
           } else {
               // Standard centered sprite
-              const drawX = transform.x + transform.width / 2 - displayW / 2;
               if (transform.facing === 'left') {
                   ctx.translate(drawX + displayW, drawY);
                   ctx.scale(-1, 1);
