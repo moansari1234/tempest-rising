@@ -222,7 +222,8 @@ export class RenderSystem {
       }
       
       if (animData) {
-          sprite.frameTimer += animDt;
+          const clipSpeed = spriteParser ? spriteParser.getClipSpeed(sprite.spriteKey, sprite.currentAnimation) : 1.0;
+          sprite.frameTimer += animDt * clipSpeed;
           if (sprite.frameTimer >= animData.frameTime) {
               sprite.frameTimer = 0;
               sprite.frameIndex++;

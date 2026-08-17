@@ -878,10 +878,11 @@ export class UISystem {
             return;
         }
 
-        // Animation Time Progression (Scaled by assetAnimSpeed)
+        // Animation Time Progression (Scaled by Clip Speed Multiplier)
         const frameDt = dt || 0.016;
+        const currentClipSpeed = spriteParser.getClipSpeed(currentEntity.spriteKey, currentAnimKey);
         if (!this.assetIsPaused && entityAnimData) {
-            this.assetFrameTimer += frameDt * (this.assetAnimSpeed || 1.0);
+            this.assetFrameTimer += frameDt * currentClipSpeed;
             if (this.assetFrameTimer >= (entityAnimData.frameTime || 0.15)) {
                 this.assetFrameTimer = 0;
                 this.assetFrameIdx = (this.assetFrameIdx + 1) % totalFrames;
@@ -1070,12 +1071,13 @@ export class UISystem {
             spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, this.assetFrameIdx, curOffX, curOffY, curScale, this.editorScope);
         }
         if ((inputManager.keys['t'] || inputManager.keys['T']) && (!inputManager.previousKeys['t'] && !inputManager.previousKeys['T'])) {
-            const speeds = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
-            const curIdx = speeds.indexOf(this.assetAnimSpeed);
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+            const curSpeed = spriteParser.getClipSpeed(currentEntity.spriteKey, currentAnimKey);
+            const curIdx = speeds.indexOf(curSpeed);
             const nextIdx = (curIdx + 1) % speeds.length;
-            this.assetAnimSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
-            try { localStorage.setItem('tempest_asset_anim_speed', this.assetAnimSpeed.toString()); } catch(e) {}
-            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x (Saved)`;
+            const newSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
+            spriteParser.setClipSpeed(currentEntity.spriteKey, currentAnimKey, newSpeed);
+            this.toastMsg = `⏱️ [${currentAnimKey.toUpperCase()}] Speed: ${newSpeed.toFixed(2)}x (Saved)`;
             this.toastTimer = 2.0;
         }
 
@@ -1261,23 +1263,24 @@ export class UISystem {
         ctx.textAlign = 'center';
         ctx.fillText(this.assetIsPaused ? '⏸ PAUSE' : '▶ PLAY', studioX + 39, studioY + 22);
 
-        // 2. Playback Speed Button [⏱️ 1.0x] (Click to Cycle 0.25x -> 0.5x -> 0.75x -> 1.0x -> 1.5x -> 2.0x)
+        // 2. Playback Speed Button [⏱️ 1.0x] (Click to Cycle Clip Speed)
+        const activeClipSpeed = spriteParser.getClipSpeed(currentEntity.spriteKey, currentAnimKey);
         if (inputManager.isClickInRect(studioX + 74, studioY + 8, 54, 22)) {
-            const speeds = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
-            const curIdx = speeds.indexOf(this.assetAnimSpeed);
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+            const curIdx = speeds.indexOf(activeClipSpeed);
             const nextIdx = (curIdx + 1) % speeds.length;
-            this.assetAnimSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
-            try { localStorage.setItem('tempest_asset_anim_speed', this.assetAnimSpeed.toString()); } catch(e) {}
-            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x (Saved)`;
+            const newSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
+            spriteParser.setClipSpeed(currentEntity.spriteKey, currentAnimKey, newSpeed);
+            this.toastMsg = `⏱️ [${currentAnimKey.toUpperCase()}] Speed: ${newSpeed.toFixed(2)}x (Saved)`;
             this.toastTimer = 2.0;
         }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.fillRect(studioX + 74, studioY + 8, 54, 22);
-        ctx.strokeStyle = this.assetAnimSpeed !== 1.0 ? '#a855f7' : '#475569';
+        ctx.strokeStyle = activeClipSpeed !== 1.0 ? '#a855f7' : '#475569';
         ctx.strokeRect(studioX + 74, studioY + 8, 54, 22);
-        ctx.fillStyle = this.assetAnimSpeed !== 1.0 ? '#c084fc' : '#38bdf8';
+        ctx.fillStyle = activeClipSpeed !== 1.0 ? '#c084fc' : '#38bdf8';
         ctx.font = 'bold 8px monospace';
-        ctx.fillText(`⏱️ ${this.assetAnimSpeed}x`, studioX + 101, studioY + 22);
+        ctx.fillText(`⏱️ ${activeClipSpeed.toFixed(2)}x`, studioX + 101, studioY + 22);
 
         // 3. Zoom Button (Top-Right)
         if (inputManager.isClickInRect(studioX + studioW - 56, studioY + 8, 48, 22)) {
@@ -1661,7 +1664,38 @@ export class UISystem {
 
             ctrlY += 25;
 
-            // --- 4. COPY FRAME OFFSET TO ALL FRAMES ---
+            // --- 4. CLIP PLAYBACK SPEED CONTROLS ---
+            const curClipSpeed = spriteParser.getClipSpeed(currentEntity.spriteKey, currentAnimKey);
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(`CLIP SPEED (${currentAnimKey.toUpperCase()})`, rightX + 10, ctrlY);
+            ctrlY += 6;
+
+            const handleSpeedChange = (delta, direct) => {
+                let s = direct !== undefined ? direct : Math.max(0.1, Math.min(3.0, curClipSpeed + delta));
+                s = Math.round(s * 100) / 100;
+                spriteParser.setClipSpeed(currentEntity.spriteKey, currentAnimKey, s);
+                this.toastMsg = `⏱️ [${currentAnimKey.toUpperCase()}] Speed: ${s.toFixed(2)}x (Saved)`;
+                this.toastTimer = 2.0;
+            };
+
+            const sBW = 38;
+            if (inputManager.isClickInRect(rowX, ctrlY, sBW, btnBH)) handleSpeedChange(-0.1);
+            if (inputManager.isClickInRect(rowX + 42, ctrlY, sBW, btnBH)) handleSpeedChange(0, 0.5);
+            if (inputManager.isClickInRect(rowX + 84, ctrlY, 46, btnBH)) handleSpeedChange(0, 1.0);
+            if (inputManager.isClickInRect(rowX + 134, ctrlY, sBW, btnBH)) handleSpeedChange(0, 1.5);
+            if (inputManager.isClickInRect(rowX + 176, ctrlY, sBW, btnBH)) handleSpeedChange(0.1);
+
+            drawNudgeBtn(rowX, ctrlY, sBW, btnBH, '-0.1x');
+            drawNudgeBtn(rowX + 42, ctrlY, sBW, btnBH, '0.5x', Math.abs(curClipSpeed - 0.5) < 0.01);
+            drawNudgeBtn(rowX + 84, ctrlY, 46, btnBH, `${curClipSpeed.toFixed(2)}x`, Math.abs(curClipSpeed - 1.0) < 0.01);
+            drawNudgeBtn(rowX + 134, ctrlY, sBW, btnBH, '1.5x', Math.abs(curClipSpeed - 1.5) < 0.01);
+            drawNudgeBtn(rowX + 176, ctrlY, sBW, btnBH, '+0.1x');
+
+            ctrlY += 25;
+
+            // --- 5. COPY FRAME OFFSET TO ALL FRAMES ---
             const copyBtnH = 20;
             if (inputManager.isClickInRect(rightX + 10, ctrlY, rightW - 20, copyBtnH)) {
                 spriteParser.copyFrameToAll(currentEntity.spriteKey, currentAnimKey, totalFrames, this.assetFrameIdx);
@@ -1744,12 +1778,16 @@ export class UISystem {
             // Button 1: Copy to Clipboard
             if (inputManager.isClickInRect(rightX + 10, ctrlY, expBtnW, expBtnH)) {
                 try {
-                    const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
+                    const exportData = {
+                        offsets: spriteParser.offsets,
+                        clipSpeeds: spriteParser.clipSpeeds
+                    };
+                    const jsonStr = JSON.stringify(exportData, null, 2);
                     navigator.clipboard.writeText(jsonStr);
-                    this.toastMsg = '📋 All Offsets Copied to Clipboard!';
+                    this.toastMsg = '📋 All Offsets & Speeds Copied!';
                     this.toastTimer = 3.0;
                 } catch(e) {
-                    this.toastMsg = '💾 Offsets Saved in LocalStorage!';
+                    this.toastMsg = '💾 Saved in LocalStorage!';
                     this.toastTimer = 3.0;
                 }
             }
@@ -1757,7 +1795,11 @@ export class UISystem {
             // Button 2: Download .json File
             if (inputManager.isClickInRect(rightX + 10 + expBtnW + 6, ctrlY, expBtnW, expBtnH)) {
                 try {
-                    const jsonStr = JSON.stringify(spriteParser.offsets, null, 2);
+                    const exportData = {
+                        offsets: spriteParser.offsets,
+                        clipSpeeds: spriteParser.clipSpeeds
+                    };
+                    const jsonStr = JSON.stringify(exportData, null, 2);
                     const blob = new Blob([jsonStr], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');

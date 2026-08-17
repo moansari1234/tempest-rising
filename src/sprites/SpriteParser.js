@@ -6,6 +6,46 @@ export class SpriteParser {
     this.cache = new Map(); // "entityId_animationName_frameIndex" -> ImageBitmap
     this.offsets = this.loadOffsets();
     this.locks = this.loadLocks();
+    this.clipSpeeds = this.loadClipSpeeds();
+  }
+
+  loadClipSpeeds() {
+    try {
+      const saved = localStorage.getItem('tempest_clip_speeds');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {};
+  }
+
+  saveClipSpeeds() {
+    try {
+      localStorage.setItem('tempest_clip_speeds', JSON.stringify(this.clipSpeeds));
+    } catch (e) {}
+  }
+
+  getClipSpeed(entityKey, animKey) {
+    if (!animKey) return 1.0;
+    const key = `${entityKey}_${animKey}`;
+    return this.clipSpeeds[key] !== undefined ? this.clipSpeeds[key] : 1.0;
+  }
+
+  setClipSpeed(entityKey, animKey, speed) {
+    if (!animKey) return;
+    const key = `${entityKey}_${animKey}`;
+    const rounded = Math.round(speed * 100) / 100;
+    if (rounded === 1.0) {
+      delete this.clipSpeeds[key];
+    } else {
+      this.clipSpeeds[key] = rounded;
+    }
+    this.saveClipSpeeds();
+    return rounded;
+  }
+
+  resetClipSpeed(entityKey, animKey) {
+    if (!animKey) return;
+    delete this.clipSpeeds[`${entityKey}_${animKey}`];
+    this.saveClipSpeeds();
   }
 
   loadLocks() {
