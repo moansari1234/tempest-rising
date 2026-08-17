@@ -14,8 +14,15 @@ export class UISystem {
         this.assetFrameTimer = 0;
         this.assetIsPaused = false;
         this.assetZoom = 1; // Strict 1x default zoom
-        this.assetAnimSpeed = 1.0; // Playback speed multiplier (0.25x to 2.0x)
+        try {
+            const savedSpeed = localStorage.getItem('tempest_asset_anim_speed');
+            this.assetAnimSpeed = savedSpeed ? parseFloat(savedSpeed) : 1.0;
+        } catch(e) {
+            this.assetAnimSpeed = 1.0;
+        }
         this.assetFacing = 'right';
+        this.titleBgImg = new Image();
+        this.titleBgImg.src = '/public/sprites/backgrounds/title_bg.jpg';
         
         // Alignment Editor State
         this.assetTab = 'editor'; // 'editor' or 'dossier'
@@ -380,8 +387,19 @@ export class UISystem {
     }
     
     renderMenu(ctx, canvas, context) {
-        ctx.fillStyle = '#050A10';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (this.titleBgImg && this.titleBgImg.complete && this.titleBgImg.naturalWidth > 0) {
+            ctx.drawImage(this.titleBgImg, 0, 0, canvas.width, canvas.height);
+            // Atmospheric dark gradient backdrop
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, 'rgba(5, 10, 16, 0.5)');
+            grad.addColorStop(0.5, 'rgba(5, 10, 16, 0.4)');
+            grad.addColorStop(1, 'rgba(5, 10, 16, 0.85)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = '#050A10';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
         
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 36px monospace';
@@ -998,7 +1016,8 @@ export class UISystem {
             const curIdx = speeds.indexOf(this.assetAnimSpeed);
             const nextIdx = (curIdx + 1) % speeds.length;
             this.assetAnimSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
-            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x`;
+            try { localStorage.setItem('tempest_asset_anim_speed', this.assetAnimSpeed.toString()); } catch(e) {}
+            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x (Saved)`;
             this.toastTimer = 2.0;
         }
 
@@ -1190,7 +1209,8 @@ export class UISystem {
             const curIdx = speeds.indexOf(this.assetAnimSpeed);
             const nextIdx = (curIdx + 1) % speeds.length;
             this.assetAnimSpeed = speeds[nextIdx >= 0 ? nextIdx : 3];
-            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x`;
+            try { localStorage.setItem('tempest_asset_anim_speed', this.assetAnimSpeed.toString()); } catch(e) {}
+            this.toastMsg = `⏱️ Animation Speed: ${this.assetAnimSpeed}x (Saved)`;
             this.toastTimer = 2.0;
         }
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
