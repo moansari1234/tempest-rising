@@ -39,21 +39,28 @@ export class InputManager {
     window.addEventListener('keydown', this.onKeyDown.bind(this));
     window.addEventListener('keyup', this.onKeyUp.bind(this));
     
-    window.addEventListener('mousemove', (e) => {
+    const updateMousePos = (e) => {
       const canvas = document.getElementById('gameCanvas');
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
       this.mouseX = (e.clientX - rect.left) * scaleX;
       this.mouseY = (e.clientY - rect.top) * scaleY;
+    };
+
+    window.addEventListener('mousemove', (e) => {
+      updateMousePos(e);
     });
 
     window.addEventListener('mousedown', (e) => {
+      updateMousePos(e);
       this.mouseClicked = true;
     });
 
     window.addEventListener('mouseup', (e) => {
+      updateMousePos(e);
       this.mouseClicked = false;
     });
   }

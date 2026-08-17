@@ -957,25 +957,36 @@ export class UISystem {
         let curOffY = activeOffset.offsetY || 0;
         let curScale = activeOffset.scale !== undefined ? activeOffset.scale : 1.0;
 
-        // Viewport Dragging to Reposition Sprite
-        if (inputManager.isMouseDownInRect(studioX, studioY, studioW, studioH)) {
+        // Viewport Dragging to Reposition Sprite (Fluid 1:1 Absolute Mouse Tracking)
+        if (inputManager.mouseClicked) {
             if (!this.isDraggingSprite) {
-                this.isDraggingSprite = true;
-                this.dragPrevX = inputManager.mouseX;
-                this.dragPrevY = inputManager.mouseY;
-            } else {
-                const deltaX = (inputManager.mouseX - this.dragPrevX) / (this.assetZoom || 1);
-                const deltaY = (inputManager.mouseY - this.dragPrevY) / (this.assetZoom || 1);
-                if (Math.abs(deltaX) >= 0.5 || Math.abs(deltaY) >= 0.5) {
-                    curOffX += deltaX;
-                    curOffY += deltaY;
-                    spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
-                    this.dragPrevX = inputManager.mouseX;
-                    this.dragPrevY = inputManager.mouseY;
+                if (inputManager.isHoverInRect(studioX, studioY, studioW, studioH)) {
+                    this.isDraggingSprite = true;
+                    this.dragStartX = inputManager.mouseX;
+                    this.dragStartY = inputManager.mouseY;
+                    this.dragInitialOffX = curOffX;
+                    this.dragInitialOffY = curOffY;
                 }
+            } else {
+                const totalDeltaX = (inputManager.mouseX - this.dragStartX) / (this.assetZoom || 1);
+                const totalDeltaY = (inputManager.mouseY - this.dragStartY) / (this.assetZoom || 1);
+                curOffX = Math.round(this.dragInitialOffX + totalDeltaX);
+                curOffY = Math.round(this.dragInitialOffY + totalDeltaY);
+                spriteParser.setOffset(currentEntity.spriteKey, currentAnimKey, curOffX, curOffY, curScale, this.editorPerAnim);
             }
         } else {
             this.isDraggingSprite = false;
+        }
+
+        // Canvas Cursor Styling
+        if (canvas) {
+            if (this.isDraggingSprite) {
+                canvas.style.cursor = 'grabbing';
+            } else if (inputManager.isHoverInRect(studioX, studioY, studioW, studioH)) {
+                canvas.style.cursor = 'grab';
+            } else {
+                canvas.style.cursor = 'default';
+            }
         }
 
         // Center Origin Crosshair & Ground Line Reference
