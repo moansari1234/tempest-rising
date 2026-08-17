@@ -60,6 +60,20 @@ export class UISystem {
                 tint: 'rgba(239, 68, 68, 0.35)'
             },
             {
+                id: 'goblin_archer',
+                spriteKey: 'goblin_archer',
+                name: 'Goblin Sharpshooter',
+                category: 'Ranged Sniper',
+                title: 'Bone-Bow Poison Archer',
+                lore: 'A hooded goblin marksman equipped with a horn shortbow and venom-dipped arrows. Snipes from elevated cavern ledges and hops backward to maintain distance.',
+                hp: '25',
+                atk: '10',
+                def: '2',
+                speed: '110 px/s',
+                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                tint: null
+            },
+            {
                 id: 'serpent',
                 spriteKey: 'serpent',
                 name: 'Tempest Serpent',

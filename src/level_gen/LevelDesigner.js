@@ -113,11 +113,16 @@ export class LevelDesigner {
         this.placePlatform(grid, platX, platY, platW);
         platformNodes.push({ x: platX, y: platY, w: platW });
 
-        // Add upper archer / secret ledge if player power is high enough
-        if (playerStats.level >= 2 && Math.random() > 0.5) {
+        // Add upper archer / sniper ledge if player power or stage is high enough
+        if (stageIndex >= 2 && Math.random() > 0.35) {
           const highY = platY - 3;
-          if (highY > 4) {
+          if (highY > 3) {
             this.placePlatform(grid, platX + 1, highY, 3);
+            enemySpawns.push({
+              type: 'goblin_archer',
+              x: (platX + 2) * this.tileSize,
+              y: (highY - 1) * this.tileSize
+            });
           }
         }
 

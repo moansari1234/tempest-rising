@@ -42,3 +42,25 @@ export function createGoblinBrawler(world, x, y) {
 
   return goblinId;
 }
+
+export function createGoblinArcher(world, x, y) {
+  const goblinId = world.createEntity();
+  
+  world.addComponent(goblinId, new Transform(x, y, 32, 32));
+  world.addComponent(goblinId, new Velocity());
+  
+  const sprite = new Sprite('goblin_archer');
+  world.addComponent(goblinId, sprite); 
+  
+  world.addComponent(goblinId, new Collider('aabb', true, 0, 0, 32, 32));
+  world.addComponent(goblinId, new Health(25, 25, 0, 0));
+  world.addComponent(goblinId, new CombatData(10, 2, 4, true, 30, 0.8)); // 10 atk arrow, light mass
+  world.addComponent(goblinId, new Hurtbox(0, 0, 32, 32));
+  
+  // Attach Ranged Archer AI
+  const ai = new AI('goblin_archer');
+  ai.detectionRange = 350;
+  world.addComponent(goblinId, ai);
+
+  return goblinId;
+}

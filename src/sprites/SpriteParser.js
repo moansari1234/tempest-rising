@@ -17,30 +17,30 @@ export class SpriteParser {
       }
     }
 
-    // 2. Load high-res pixel art PNG sprites for Tempest Serpent Boss
-    const serpentAnims = {
-      idle: 4,
-      run: 4,
-      attack: 4,
-      hurt: 2,
-      death: 4
+    // 2. Load high-res pixel art PNG sprites for Boss & Goblins
+    const pngEntities = {
+      serpent: { idle: 4, run: 4, attack: 4, hurt: 2, death: 4 },
+      goblin: { idle: 4, run: 4, attack: 3, hurt: 2, death: 4 },
+      goblin_archer: { idle: 4, run: 4, attack: 4, hurt: 2, death: 4 }
     };
 
-    for (const [animKey, frameCount] of Object.entries(serpentAnims)) {
-      for (let i = 0; i < frameCount; i++) {
-        const pngPath = `/public/sprites/serpent/${animKey}_${i}.png`;
-        try {
-          const img = new Image();
-          img.src = pngPath;
-          await new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-          if (img.complete && img.naturalWidth > 0) {
-            const bitmap = await createImageBitmap(img);
-            this.cache.set(`serpent_${animKey}_${i}`, bitmap);
-          }
-        } catch (e) {}
+    for (const [entityKey, anims] of Object.entries(pngEntities)) {
+      for (const [animKey, frameCount] of Object.entries(anims)) {
+        for (let i = 0; i < frameCount; i++) {
+          const pngPath = `/public/sprites/${entityKey}/${animKey}_${i}.png`;
+          try {
+            const img = new Image();
+            img.src = pngPath;
+            await new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            });
+            if (img.complete && img.naturalWidth > 0) {
+              const bitmap = await createImageBitmap(img);
+              this.cache.set(`${entityKey}_${animKey}_${i}`, bitmap);
+            }
+          } catch (e) {}
+        }
       }
     }
 

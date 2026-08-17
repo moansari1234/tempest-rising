@@ -1,7 +1,7 @@
 import { CONSTANTS } from '../data/constants.js';
 import { Levels } from '../data/levels.js';
 import { LevelDesigner } from '../level_gen/LevelDesigner.js';
-import { createGoblin, createGoblinBrawler } from '../prefabs/GoblinPrefab.js';
+import { createGoblin, createGoblinBrawler, createGoblinArcher } from '../prefabs/GoblinPrefab.js';
 
 export class LevelManager {
   constructor() {
@@ -49,6 +49,8 @@ export class LevelManager {
         createGoblin(world, spawn.x, spawn.y);
       } else if (spawn.type === 'goblin_brawler') {
         createGoblinBrawler(world, spawn.x, spawn.y);
+      } else if (spawn.type === 'goblin_archer') {
+        createGoblinArcher(world, spawn.x, spawn.y);
       } else if (spawn.type === 'boss_serpent') {
         import('../prefabs/BossPrefab.js').then(module => {
           module.createTempestSerpent(world, spawn.x, spawn.y);
