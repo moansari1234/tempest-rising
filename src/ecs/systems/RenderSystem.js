@@ -1,4 +1,4 @@
-import { Transform, Sprite, Velocity, Hurtbox, Hitbox, AI, PlayerInput, Health } from '../Components.js';
+import { Transform, Sprite, Velocity, Hurtbox, Hitbox, AI, PlayerInput, Health, InteractiveProp, Hazard } from '../Components.js';
 import { CONSTANTS } from '../../data/constants.js';
 import { AnimationData } from '../../sprites/AnimationData.js';
 
