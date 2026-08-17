@@ -59,6 +59,18 @@ export const AnimationData = {
   campfire: {
     burn: { frameTime: 0.16, frames: 4, loop: true }
   },
+  spikes: {
+    trigger: { frameTime: 0.16, frames: 4, loop: true }
+  },
+  stalactite: {
+    drop: { frameTime: 0.18, frames: 4, loop: false }
+  },
+  spore_shroom: {
+    spore: { frameTime: 0.16, frames: 4, loop: true }
+  },
+  acid_vent: {
+    bubble: { frameTime: 0.16, frames: 4, loop: true }
+  },
   tiles: {
     ground_mid: { frameTime: 1.0, frames: 1, loop: true },
     ground_left: { frameTime: 1.0, frames: 1, loop: true },

@@ -171,7 +171,53 @@ export class SpriteParser {
       }
     }
 
-    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites (Characters & Environment)');
+    // 7. Load Environment Hazards & Traps
+    const hazardAnims = {
+      spikes: { trigger: 4 },
+      stalactite: { drop: 4 },
+      spore_shroom: { spore: 4 },
+      acid_vent: { bubble: 4 }
+    };
+    for (const [hazKey, anims] of Object.entries(hazardAnims)) {
+      for (const [animKey, frameCount] of Object.entries(anims)) {
+        for (let i = 0; i < frameCount; i++) {
+          const prefix = hazKey === 'spikes' ? 'spikes_trigger' : hazKey === 'stalactite' ? 'stalactite_drop' : hazKey === 'spore_shroom' ? 'spore_shroom' : 'acid_vent';
+          const pngPath = `/public/sprites/hazards/${prefix}_${i}.png`;
+          try {
+            const img = new Image();
+            img.src = pngPath;
+            await new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            });
+            if (img.complete && img.naturalWidth > 0) {
+              const bitmap = await createImageBitmap(img);
+              this.cache.set(`${hazKey}_${animKey}_${i}`, bitmap);
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // 8. Load Multi-Layer Parallax Backgrounds
+    const bgLayers = ['bg_cavern_far', 'bg_cavern_mid', 'bg_cavern_near'];
+    for (const bgName of bgLayers) {
+      const pngPath = `/public/sprites/backgrounds/${bgName}.png`;
+      try {
+        const img = new Image();
+        img.src = pngPath;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+        if (img.complete && img.naturalWidth > 0) {
+          const bitmap = await createImageBitmap(img);
+          this.cache.set(`background_${bgName}`, bitmap);
+        }
+      } catch (e) {}
+    }
+
+    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites (Characters, Environment & Backgrounds)');
   }
 
   getBitmap(entityKey, animKey, frameIndex, forceSkin = null) {

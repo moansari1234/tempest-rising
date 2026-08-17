@@ -271,6 +271,66 @@ export class UISystem {
                 animations: ['burn'],
                 forcePack: null,
                 tint: null
+            },
+            {
+                id: 'floor_spikes',
+                spriteKey: 'spikes',
+                name: 'Razor Floor Spikes',
+                category: 'Lethal Trap',
+                title: 'Spring-Loaded Impaler Plate',
+                lore: 'Concealed stone floor plate loaded with razor-sharp tempered steel spikes that erupt upward when stepped on by intruders.',
+                hp: 'Hazard',
+                atk: '18 Direct DMG',
+                def: 'Trap',
+                speed: 'Spring-Loaded',
+                animations: ['trigger'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'ceiling_stalactite',
+                spriteKey: 'stalactite',
+                name: 'Ceiling Drop Stalactite',
+                category: 'Overhead Hazard',
+                title: 'Quake Triggered Drop Spire',
+                lore: 'Massive stone stalactite hanging from the cavern ceiling. Trembles upon hearing combat tremors before plunging to shatter on the floor.',
+                hp: 'Hazard',
+                atk: '25 Heavy Impact',
+                def: 'Breakable on Floor',
+                speed: 'Terminal Gravity',
+                animations: ['drop'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'toxic_spore_shroom',
+                spriteKey: 'spore_shroom',
+                name: 'Toxic Spore Mushroom',
+                category: 'Bio Hazard',
+                title: 'Poison Spore Geyser',
+                lore: 'Bulbous mutant toadstool that inflates and detonates with a concentrated green poison gas geyser containing lingering skull toxins.',
+                hp: 'Hazard',
+                atk: 'Poison Status DOT',
+                def: 'Elastic Cap',
+                speed: 'Eruptive',
+                animations: ['spore'],
+                forcePack: null,
+                tint: null
+            },
+            {
+                id: 'acid_swamp_vent',
+                spriteKey: 'acid_vent',
+                name: 'Acid Bubble Vent',
+                category: 'Corrosive Hazard',
+                title: 'Cavern Swamp Fissure',
+                lore: 'Subterranean green acid pool with expanding sulfurous bubbles that burst into caustic spray, melting armor and slowing mobility.',
+                hp: 'Hazard',
+                atk: 'Acid Burn + Slow',
+                def: 'Liquid Pool',
+                speed: 'Bubbling',
+                animations: ['bubble'],
+                forcePack: null,
+                tint: null
             }
         ];
     }

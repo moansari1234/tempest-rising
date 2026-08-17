@@ -41,6 +41,49 @@ export class RenderSystem {
     // Apply camera
     camera.apply(ctx);
 
+    // Render Multi-Layer Parallax Backgrounds
+    const bgFar = spriteParser.cache.get('background_bg_cavern_far');
+    const bgMid = spriteParser.cache.get('background_bg_cavern_mid');
+    const bgNear = spriteParser.cache.get('background_bg_cavern_near');
+
+    const viewX = camera.x;
+    const viewY = camera.y;
+    const viewW = camera.viewportWidth || CONSTANTS.CANVAS_WIDTH;
+    const viewH = camera.viewportHeight || CONSTANTS.CANVAS_HEIGHT;
+
+    // Layer 1: Far Abyss & Cavern Bridges (0.15x parallax)
+    if (bgFar) {
+      const pFarX = viewX * 0.15;
+      const bgW = bgFar.width * 2.0;
+      const bgH = viewH;
+      const startX = Math.floor((viewX - pFarX) / bgW) * bgW + pFarX;
+      for (let bx = startX - bgW; bx < viewX + viewW + bgW; bx += bgW) {
+        ctx.drawImage(bgFar, bx, viewY, bgW, bgH);
+      }
+    }
+
+    // Layer 2: Bioluminescent Mushroom Forest & Waterfalls (0.35x parallax)
+    if (bgMid) {
+      const pMidX = viewX * 0.35;
+      const bgW = bgMid.width * 2.0;
+      const bgH = viewH;
+      const startX = Math.floor((viewX - pMidX) / bgW) * bgW + pMidX;
+      for (let bx = startX - bgW; bx < viewX + viewW + bgW; bx += bgW) {
+        ctx.drawImage(bgMid, bx, viewY, bgW, bgH);
+      }
+    }
+
+    // Layer 3: Foreground Pillars & Hanging Vines (0.65x parallax)
+    if (bgNear) {
+      const pNearX = viewX * 0.65;
+      const bgW = bgNear.width * 2.0;
+      const bgH = viewH;
+      const startX = Math.floor((viewX - pNearX) / bgW) * bgW + pNearX;
+      for (let bx = startX - bgW; bx < viewX + viewW + bgW; bx += bgW) {
+        ctx.drawImage(bgNear, bx, viewY, bgW, bgH);
+      }
+    }
+
     // Draw Tilemap
     if (context.levelManager) {
         context.levelManager.render(ctx, camera, spriteParser);
