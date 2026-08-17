@@ -155,8 +155,26 @@ export class CombatSystem {
                       
                       if (eCombat && context.xpSystem) context.xpSystem.awardXP(eCombat.xpValue, 1.5, context);
                       
-                      // Check if it's the boss
+                      // Great Sage Analysis Notification
                       const eAI = world.getComponent(eId, AI);
+                      if (context.sage) {
+                          if (eAI && eAI.type === 'boss_serpent') {
+                              context.sage.notify(
+                                  '« ❖ MAJOR NOTICE: VOICE OF THE WORLD ❖ »',
+                                  '«Analysis of Mythic Boss [Tempest Serpent] complete. Acquired Extra Skill [Thunder Dragon Discharge] & [Electric Breath]!»',
+                                  { type: 'skill_acquired', duration: 6.0, sound: 'boss_roar' }
+                              );
+                          } else {
+                              const foeName = eAI && eAI.type === 'goblin_archer' ? 'Goblin Sharpshooter' : 'Goblin Scout';
+                              context.sage.notify(
+                                  '« REPORT: GREAT SAGE »',
+                                  `«Analysis of [${foeName}] complete. Absorbed magicules, biological data & restored 20 HP.»`,
+                                  { type: 'devour', duration: 3.5, sound: 'absorb' }
+                              );
+                          }
+                      }
+                      
+                      // Check if it's the boss
                       if (eAI && eAI.type === 'boss_serpent') {
                           if (context.xpSystem) context.xpSystem.awardBossBonus();
                           // Increase max HP and Save

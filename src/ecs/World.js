@@ -75,10 +75,11 @@ export class World {
   }
 
   render(context) {
+    const dt = (context && context._frameDt) ? context._frameDt : (1 / 60);
     // Run rendering systems
     for (const system of this.systems) {
       if (system.constructor.name === 'RenderSystem' || system.constructor.name === 'UISystem') {
-        system.update(this, 0, context);
+        system.update(this, dt, context);
       }
     }
   }

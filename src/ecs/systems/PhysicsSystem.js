@@ -332,6 +332,14 @@ export class PhysicsSystem {
                           context.camera.setLevelBounds(levelManager.width * levelManager.tileSize, levelManager.height * levelManager.tileSize);
                           levelManager.spawnLevelEntities(world);
 
+                          if (context.sage) {
+                              context.sage.notify(
+                                  '« REPORT: GREAT SAGE »',
+                                  `«Arrival at [${levelManager.stageName}]. Ambient magicule density and enemy presences detected.»`,
+                                  { type: 'info', duration: 4.0 }
+                              );
+                          }
+
                           transform.x = 80;
                           transform.y = 420;
                           velocity.vx = 0;

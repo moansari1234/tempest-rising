@@ -127,9 +127,9 @@ export class AISystem {
 
       // Goblin Archer / Sharpshooter AI
       if (ai.type === 'goblin_archer') {
-          const RETREAT_SPEED = 110;
-          const MAX_RANGE = 380;
-          const MIN_RANGE = 120;
+          const RETREAT_SPEED = 100;
+          const MAX_RANGE = 520;
+          const MIN_RANGE = 100;
 
           let distToPlayer = Infinity;
           if (playerTransform && playerHealth.alive) {
@@ -141,7 +141,7 @@ export class AISystem {
               velocity.vx = 0;
               if (distToPlayer < MAX_RANGE) {
                   ai.state = 'aim';
-                  ai.stateTimer = 0.4;
+                  ai.stateTimer = 0.35;
                   if (playerTransform) transform.facing = playerTransform.x > transform.x ? 'right' : 'left';
               }
           } else if (ai.state === 'retreat') {
@@ -150,9 +150,9 @@ export class AISystem {
                   velocity.vx = playerTransform.x > transform.x ? -RETREAT_SPEED : RETREAT_SPEED;
                   transform.facing = playerTransform.x > transform.x ? 'right' : 'left';
               }
-              if (ai.stateTimer <= 0 || distToPlayer > MIN_RANGE + 40) {
+              if (ai.stateTimer <= 0 || distToPlayer > MIN_RANGE + 50) {
                   ai.state = 'aim';
-                  ai.stateTimer = 0.5;
+                  ai.stateTimer = 0.4;
                   velocity.vx = 0;
               }
           } else if (ai.state === 'aim') {
@@ -163,26 +163,32 @@ export class AISystem {
               // If player rushed in too close, retreat
               if (distToPlayer < MIN_RANGE) {
                   ai.state = 'retreat';
-                  ai.stateTimer = 0.8;
+                  ai.stateTimer = 0.7;
               } else if (ai.stateTimer <= 0) {
                   ai.state = 'attack';
                   ai.stateTimer = 0.6; // Draw bow and loose poison arrow
+                  ai.hasFired = false;
               }
           } else if (ai.state === 'attack') {
               ai.stateTimer -= dt;
               velocity.vx = 0;
 
-              // Fire arrow
-              if (ai.stateTimer <= 0.1 && ai.stateTimer > -1) {
+              // Fire arrow at 0.3s of 0.6s animation (draw -> release)
+              if (ai.stateTimer <= 0.3 && !ai.hasFired) {
+                  ai.hasFired = true;
                   const arrowId = world.createEntity();
-                  const arrX = transform.facing === 'right' ? transform.x + transform.width : transform.x - 24;
-                  world.addComponent(arrowId, new Transform(arrX, transform.y + 12, 24, 8));
-                  world.addComponent(arrowId, new Velocity(transform.facing === 'right' ? 360 : -360, 0));
-                  world.addComponent(arrowId, new Hitbox(id, 10, 120, 2.0, CONSTANTS.HITSTOP_LIGHT, 'poison'));
+                  const dir = transform.facing === 'right' ? 1 : -1;
+                  const arrX = dir === 1 ? transform.x + transform.width : transform.x - 28;
+                  world.addComponent(arrowId, new Transform(arrX, transform.y + 16, 28, 8));
+                  world.addComponent(arrowId, new Velocity(dir * 380, 0));
+                  world.addComponent(arrowId, new Hitbox(id, 12, 140, 2.5, CONSTANTS.HITSTOP_LIGHT, 'poison'));
                   
-                  ai.stateTimer = -2;
+                  if (context.audio) context.audio.play('attack_light');
+              }
+              if (ai.stateTimer <= 0) {
+                  ai.hasFired = false;
                   ai.state = 'idle';
-                  ai.stateTimer = 1.2; // Cool-off between shots
+                  ai.stateTimer = 1.0; // Cool-off between shots
               }
           }
       }

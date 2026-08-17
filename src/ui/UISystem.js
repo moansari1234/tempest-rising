@@ -426,61 +426,150 @@ export class UISystem {
 
     renderHUD(ctx, canvas, world, playerHealth, context) {
         const hudX = 20;
-        const hudY = 20;
-        const barWidth = 200;
-        const barHeight = 16;
+        const hudY = 16;
+        const hudW = 280;
+        const hudH = 76;
         
-        // --- 1. PLAYER HEALTH & GHOST DAMAGE BAR ---
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(hudX - 5, hudY - 5, barWidth + 10, barHeight * 3 + 24);
-        ctx.strokeStyle = '#334155';
+        // --- 1. PLAYER STATUS PANEL ---
+        ctx.fillStyle = 'rgba(10, 15, 26, 0.92)';
+        ctx.fillRect(hudX, hudY, hudW, hudH);
+        ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(hudX - 5, hudY - 5, barWidth + 10, barHeight * 3 + 24);
+        ctx.strokeRect(hudX, hudY, hudW, hudH);
+
+        // Avatar Frame (Slime Icon)
+        const avSize = 44;
+        const avX = hudX + 8;
+        const avY = hudY + 8;
+        ctx.fillStyle = '#06111f';
+        ctx.fillRect(avX, avY, avSize, avSize);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(avX, avY, avSize, avSize);
+
+        // Draw Slime Head
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(avX + avSize / 2, avY + avSize / 2 + 3, 14, 0, Math.PI * 2);
+        ctx.fill();
+        // Slime Eyes
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(avX + 16, avY + 20, 3, 7);
+        ctx.fillRect(avX + 25, avY + 20, 3, 7);
+
+        // Level Badge below Avatar
+        const pLevel = (context.xpSystem && context.xpSystem.level) ? context.xpSystem.level : 1;
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Lv. ${pLevel}`, avX + avSize / 2, avY + avSize + 16);
+
+        // Player Name & Title
+        const barX = avX + avSize + 10;
+        const barW = hudW - avSize - 26;
+        
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('Rimuru Tempest', barX, hudY + 16);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('Demon Lord Slime', hudX + hudW - 8, hudY + 16);
 
         if (playerHealth) {
-            const currentHp = Math.max(0, playerHealth.current);
-            const maxHp = playerHealth.max;
-            const hpRatio = currentHp / maxHp;
+            const currentHp = Math.max(0, playerHealth.hp || 0);
+            const maxHp = playerHealth.maxHp || 100;
+            const hpRatio = Math.min(1, Math.max(0, currentHp / maxHp));
             
             if (this.ghostHp > currentHp) {
                 this.ghostHp = Math.max(currentHp, this.ghostHp - 0.5);
             } else {
                 this.ghostHp = currentHp;
             }
-            const ghostRatio = this.ghostHp / maxHp;
+            const ghostRatio = Math.min(1, Math.max(0, this.ghostHp / maxHp));
 
-            // Ghost damage trailing bar
-            ctx.fillStyle = '#f87171';
-            ctx.fillRect(hudX, hudY, barWidth * ghostRatio, barHeight);
+            // HP Bar (Green / Red Ghost Trail)
+            const hpY = hudY + 22;
+            const bH = 10;
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(barX, hpY, barW, bH);
+            
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(barX, hpY, barW * ghostRatio, bH);
 
-            // Active Green HP Bar
             ctx.fillStyle = '#22c55e';
-            ctx.fillRect(hudX, hudY, barWidth * hpRatio, barHeight);
-            
-            // HP Bar Outline
-            ctx.strokeStyle = '#0f172a';
+            ctx.fillRect(barX, hpY, barW * hpRatio, bH);
+
+            ctx.strokeStyle = '#334155';
             ctx.lineWidth = 1;
-            ctx.strokeRect(hudX, hudY, barWidth, barHeight);
-            
+            ctx.strokeRect(barX, hpY, barW, bH);
+
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 10px monospace';
+            ctx.font = 'bold 8px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(`HP: ${Math.round(currentHp)} / ${maxHp}`, hudX + 5, hudY + 12);
+            ctx.fillText(`HP ${Math.round(currentHp)}/${maxHp}`, barX + 4, hpY + 8);
+
+            // MP / Magicule Bar (Cyan)
+            const mpY = hpY + bH + 3;
+            const currentMp = playerHealth.mp !== undefined ? playerHealth.mp : 50;
+            const maxMp = playerHealth.maxMp || 50;
+            const mpRatio = Math.min(1, Math.max(0, currentMp / maxMp));
+            
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(barX, mpY, barW, 8);
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillRect(barX, mpY, barW * mpRatio, 8);
+            ctx.strokeStyle = '#334155';
+            ctx.strokeRect(barX, mpY, barW, 8);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 7px monospace';
+            ctx.fillText(`MP ${Math.round(currentMp)}/${maxMp}`, barX + 4, mpY + 6);
+
+            // XP Progression Bar (Gold)
+            const xpY = mpY + 11;
+            const currXP = (context.xpSystem && context.xpSystem.currentXP) ? context.xpSystem.currentXP : 0;
+            const maxXP = (context.xpSystem && context.xpSystem.getXPThreshold) ? context.xpSystem.getXPThreshold(pLevel) : 50;
+            const xpRatio = Math.min(1, Math.max(0, currXP / maxXP));
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(barX, xpY, barW, 6);
+            ctx.fillStyle = '#eab308';
+            ctx.fillRect(barX, xpY, barW * xpRatio, 6);
+            ctx.strokeStyle = '#334155';
+            ctx.strokeRect(barX, xpY, barW, 6);
+
+            ctx.fillStyle = '#fef08a';
+            ctx.font = 'bold 7px monospace';
+            ctx.fillText(`XP ${currXP}/${maxXP}`, barX + 4, xpY + 5);
         }
 
-        // --- 2. SKILL COOLDOWNS & MANA / MP BARS ---
-        const cdY = hudY + barHeight + 8;
-        const cdKeys = ['Z: ATK', 'X: HEAVY', 'C: PARRY', 'E: ABSORB', 'SHIFT: DASH'];
-        ctx.font = '9px monospace';
-        for (let i = 0; i < cdKeys.length; i++) {
-            const pillX = hudX + (i * 42);
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
-            ctx.fillRect(pillX, cdY, 38, 14);
-            ctx.strokeStyle = '#38bdf8';
-            ctx.strokeRect(pillX, cdY, 38, 14);
-            
-            ctx.fillStyle = '#e2e8f0';
-            ctx.fillText(cdKeys[i], pillX + 3, cdY + 10);
+        // --- 2. COMBAT SKILL BADGES STRIP ---
+        const skillsY = hudY + hudH + 8;
+        const skills = [
+            { key: 'Z', name: 'ATK', color: '#38bdf8' },
+            { key: 'X', name: 'HEAVY', color: '#f59e0b' },
+            { key: 'C', name: 'PARRY', color: '#a855f7' },
+            { key: 'E', name: 'DEVOUR', color: '#06b6d4' },
+            { key: 'SHIFT', name: 'DASH', color: '#10b981' }
+        ];
+
+        let sX = hudX;
+        for (const s of skills) {
+            const pillW = s.key.length > 1 ? 62 : 48;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillRect(sX, skillsY, pillW, 18);
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(sX, skillsY, pillW, 18);
+
+            ctx.fillStyle = s.color;
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`[${s.key}] ${s.name}`, sX + pillW / 2, skillsY + 12);
+            sX += pillW + 6;
         }
 
         // --- 3. COMBO STREAK & MULTIPLIER ---
@@ -488,15 +577,21 @@ export class UISystem {
             ctx.fillStyle = '#facc15';
             ctx.font = 'bold 16px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(`${context.comboCount}x COMBO!`, hudX, hudY + 65);
+            ctx.fillText(`${context.comboCount}x COMBO!`, hudX, skillsY + 38);
         }
 
         // --- 4. STAGE / FLOOR INDICATOR ---
         if (context.levelManager) {
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = 'bold 13px monospace';
-            ctx.textAlign = 'right';
-            ctx.fillText(context.levelManager.stageName || 'Floor 1-1', canvas.width - 25, 35);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(canvas.width - 240, 16, 220, 26);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(canvas.width - 240, 16, 220, 26);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🏰 ${context.levelManager.stageName || 'Floor 1-1'}`, canvas.width - 130, 33);
         }
 
         // --- 5. BOSS HEALTH BAR (IF ACTIVE) ---
@@ -505,32 +600,89 @@ export class UISystem {
             const ai = world.getComponent(bossId, AI);
             const bossHp = world.getComponent(bossId, Health);
             if (ai.type === 'boss_serpent' && bossHp.alive) {
-                const bBarW = 400;
-                const bBarH = 14;
+                const bBarW = 440;
+                const bBarH = 16;
                 const bBarX = (canvas.width - bBarW) / 2;
-                const bBarY = canvas.height - 40;
+                const bBarY = canvas.height - 42;
 
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-                ctx.fillRect(bBarX - 5, bBarY - 20, bBarW + 10, bBarH + 26);
+                ctx.fillStyle = 'rgba(10, 15, 26, 0.95)';
+                ctx.fillRect(bBarX - 8, bBarY - 22, bBarW + 16, bBarH + 30);
                 ctx.strokeStyle = '#a855f7';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(bBarX - 5, bBarY - 20, bBarW + 10, bBarH + 26);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bBarX - 8, bBarY - 22, bBarW + 16, bBarH + 30);
 
-                ctx.fillStyle = '#a855f7';
+                ctx.fillStyle = '#c084fc';
                 ctx.font = 'bold 12px monospace';
                 ctx.textAlign = 'left';
-                ctx.fillText('TEMPEST SERPENT (LEVIATHAN)', bBarX, bBarY - 5);
+                ctx.fillText('🐉 TEMPEST SERPENT (LEVIATHAN)', bBarX, bBarY - 6);
 
-                const bRatio = Math.max(0, bossHp.current / bossHp.max);
-                ctx.fillStyle = '#ef4444';
+                const bRatio = Math.max(0, bossHp.hp / bossHp.maxHp);
+                ctx.fillStyle = '#450a0a';
+                ctx.fillRect(bBarX, bBarY, bBarW, bBarH);
+                ctx.fillStyle = '#dc2626';
                 ctx.fillRect(bBarX, bBarY, bBarW * bRatio, bBarH);
 
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 10px monospace';
+                ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${Math.round(bossHp.current)} / ${bossHp.max}`, bBarX + bBarW / 2, bBarY + 11);
+                ctx.fillText(`${Math.round(bossHp.hp)} / ${bossHp.maxHp}`, bBarX + bBarW / 2, bBarY + 12);
             }
         }
+
+        // --- 6. VOICE OF THE WORLD / GREAT SAGE ANIME SYSTEM NOTIFICATION POPUP ---
+        this.renderGreatSage(ctx, canvas, context);
+    }
+
+    renderGreatSage(ctx, canvas, context) {
+        if (!context.sage || !context.sage.current) return;
+
+        const current = context.sage.current;
+        const msg = current.message.slice(0, context.sage.typewriterIndex || 0);
+        const pulse = Math.sin(performance.now() / 200) * 0.2 + 0.8;
+
+        const popW = Math.min(520, canvas.width - 40);
+        const popH = 82;
+        const popX = (canvas.width - popW) / 2;
+        const popY = canvas.height - 110;
+
+        ctx.save();
+        // Dark Obsidian & Celestial Backdrop
+        ctx.fillStyle = 'rgba(6, 11, 20, 0.96)';
+        ctx.fillRect(popX, popY, popW, popH);
+
+        // Golden Ethereal Glow Border
+        ctx.strokeStyle = `rgba(245, 158, 11, ${pulse})`;
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(popX, popY, popW, popH);
+
+        // Anime Corner Accents
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(popX - 2, popY - 2, 8, 3);
+        ctx.fillRect(popX - 2, popY - 2, 3, 8);
+        ctx.fillRect(popX + popW - 6, popY - 2, 8, 3);
+        ctx.fillRect(popX + popW - 1, popY - 2, 3, 8);
+
+        // Header Title
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(current.title, popX + 16, popY + 20);
+
+        // Horizontal Pulse Line
+        ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(popX + 16, popY + 26);
+        ctx.lineTo(popX + popW - 16, popY + 26);
+        ctx.stroke();
+
+        // Message Body (Typewritten)
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        this.wrapText(ctx, msg, popX + 16, popY + 44, popW - 32, 16);
+
+        ctx.restore();
     }
 
     renderGameOver(ctx, canvas) {

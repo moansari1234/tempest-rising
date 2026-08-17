@@ -70,6 +70,14 @@ export class XPSystem {
     if (context && context.audio) {
         context.audio.play('level_up');
     }
+
+    if (context && context.sage) {
+        context.sage.notify(
+            '« ❖ NOTICE: VOICE OF THE WORLD ❖ »',
+            `«Individual [Rimuru Tempest] has advanced to Level ${this.level}. Maximum Magicules, HP & Combat Poise increased.»`,
+            { type: 'level_up', sound: 'level_up', duration: 5.0 }
+        );
+    }
   }
 
   awardBossBonus() {

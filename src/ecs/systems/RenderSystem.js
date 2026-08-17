@@ -336,6 +336,39 @@ export class RenderSystem {
     const playerTransform = players.length > 0 ? world.getComponent(players[0], Transform) : null;
     const playerHealth = players.length > 0 ? world.getComponent(players[0], Health) : null;
 
+    // --- Render Active Projectiles (Poison Arrows) ---
+    const projectiles = world.queryEntities([Transform, Hitbox, Velocity]);
+    for (const pId of projectiles) {
+      const pTrans = world.getComponent(pId, Transform);
+      const pVel = world.getComponent(pId, Velocity);
+      const pHit = world.getComponent(pId, Hitbox);
+      if (pHit && pHit.element === 'poison') {
+        ctx.save();
+        const dir = pVel.vx >= 0 ? 1 : -1;
+        // Arrow shaft
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(pTrans.x, pTrans.y + 2, pTrans.width, 3);
+
+        // Glowing arrow head
+        ctx.fillStyle = '#22c55e';
+        ctx.shadowColor = '#4ade80';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        const headX = dir === 1 ? pTrans.x + pTrans.width : pTrans.x;
+        ctx.moveTo(headX, pTrans.y);
+        ctx.lineTo(headX + dir * 8, pTrans.y + 3);
+        ctx.lineTo(headX, pTrans.y + 6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Toxic green particle trail
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.5)';
+        ctx.fillRect(headX - dir * 22, pTrans.y + 1, 16, 5);
+        ctx.restore();
+      }
+    }
+
+    // Render In-World Health Bars and [E] Devour Prompts
     const enemyEntities = world.queryEntities([Transform, Health, AI]);
     for (const id of enemyEntities) {
         const transform = world.getComponent(id, Transform);

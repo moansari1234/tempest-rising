@@ -14,6 +14,7 @@ import { LevelManager } from './core/LevelManager.js';
 import { UISystem } from './ui/UISystem.js';
 import { XPSystem } from './core/XPSystem.js';
 import { AudioManager } from './core/AudioManager.js';
+import { GreatSageSystem } from './core/GreatSageSystem.js';
 
 class Game {
   constructor() {
@@ -29,6 +30,7 @@ class Game {
     this.audio = new AudioManager();
     this.xpSystem = new XPSystem();
     this.inputManager = new InputManager();
+    this.greatSage = new GreatSageSystem();
     this.camera = new Camera(CONSTANTS.NATIVE_WIDTH, CONSTANTS.NATIVE_HEIGHT);
     
     this.levelManager = new LevelManager();
@@ -59,6 +61,7 @@ class Game {
       levelManager: this.levelManager,
       audio: this.audio,
       xpSystem: this.xpSystem,
+      sage: this.greatSage,
       floaterQueue: [],
       world: this.world,
       hitstopTimer: 0 // Global Hitstop
@@ -167,6 +170,7 @@ class Game {
             return; 
         }
         this.world.updateLogic(dt, this.context);
+        this.greatSage.update(dt, this.context);
     }
   }
 
