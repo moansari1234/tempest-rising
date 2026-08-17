@@ -150,10 +150,20 @@ class Game {
         this.inputManager.consumeAction('viewAssets');
     }
 
+    // Toggle Slime Status Window (Tab / I / B)
+    if (this.inputManager.isActionJustPressed('toggleStatus')) {
+        if (state === GameState.STATUS) {
+            this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);
+        } else if (state === GameState.PLAYING || state === GameState.PAUSED) {
+            this.gameStateManager.setState(GameState.STATUS);
+        }
+        this.inputManager.consumeAction('toggleStatus');
+    }
+
     if (this.inputManager.isActionJustPressed('pause')) {
         if (state === GameState.PLAYING) {
             this.gameStateManager.setState(GameState.PAUSED);
-        } else if (state === GameState.PAUSED) {
+        } else if (state === GameState.PAUSED || state === GameState.STATUS) {
             this.gameStateManager.setState(GameState.PLAYING);
         } else if (state === GameState.ASSETS) {
             this.gameStateManager.setState(this.gameStateManager.previousState || GameState.PLAYING);

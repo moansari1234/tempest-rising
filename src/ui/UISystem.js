@@ -7,6 +7,7 @@ import { PauseView } from './views/PauseView.js';
 import { GameOverView } from './views/GameOverView.js';
 import { TransitionView } from './views/TransitionView.js';
 import { AssetLibraryView } from './asset_library/AssetLibraryView.js';
+import { StatusView } from './views/StatusView.js';
 import { GreatSageToast } from './components/GreatSageToast.js';
 import { FloatersManager } from './components/Floaters.js';
 
@@ -19,6 +20,7 @@ export class UISystem {
         this.gameOverView = new GameOverView();
         this.transitionView = new TransitionView();
         this.assetLibraryView = new AssetLibraryView();
+        this.statusView = new StatusView();
         this.greatSageToast = new GreatSageToast();
         this.floatersManager = new FloatersManager();
 
@@ -64,6 +66,9 @@ export class UISystem {
         } else if (state === GameState.PAUSED) {
             this.hudView.render(ctx, canvas, world, playerHealth, context);
             this.pauseView.render(ctx, canvas, context);
+        } else if (state === GameState.STATUS) {
+            this.hudView.render(ctx, canvas, world, playerHealth, context);
+            this.statusView.render(ctx, canvas, world, playerHealth, context, dt);
         } else if (state === GameState.GAME_OVER) {
             this.gameOverView.render(ctx, canvas);
         } else if (state === GameState.LEVEL_TRANSITION) {

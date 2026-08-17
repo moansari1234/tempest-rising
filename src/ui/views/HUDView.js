@@ -134,12 +134,16 @@ export class HUDView {
             { key: 'X', name: 'HEAVY', color: '#f59e0b' },
             { key: 'C', name: 'PARRY', color: '#a855f7' },
             { key: 'E', name: 'DEVOUR', color: '#06b6d4' },
-            { key: 'SHIFT', name: 'DASH', color: '#10b981' }
+            { key: 'SHIFT', name: 'DASH', color: '#10b981' },
+            { key: 'TAB', name: 'STATUS', color: '#facc15' }
         ];
 
         let sX = hudX;
         for (const s of skills) {
-            const pillW = s.key.length > 1 ? 62 : 48;
+            const pillW = s.key.length > 3 ? 72 : (s.key.length > 1 ? 58 : 48);
+            if (s.key === 'TAB' && context.inputManager && context.inputManager.isClickInRect(sX, skillsY, pillW, 18)) {
+                context.gameStateManager.setState(9); // GameState.STATUS
+            }
             ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
             ctx.fillRect(sX, skillsY, pillW, 18);
             ctx.strokeStyle = s.color;
