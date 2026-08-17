@@ -56,35 +56,34 @@ export class SpriteParser {
       }
     }
 
-    // 3. Load Rimuru Pack 2 (Arcade HD)
-    const rimuruV2Anims = {
-      idle: 4,
-      run: 4,
-      jump: 4,
-      attack_light: 4,
-      attack_heavy: 4,
-      predator: 4,
-      special: 2,
-      hurt: 2,
-      death: 4,
-      victory: 4
+    // 3. Load Rimuru Pack 2 (Arcade HD) and Goblin Archer v2
+    const v2Packs = {
+      rimuru_v2: {
+        idle: 4, run: 4, jump: 4, attack_light: 4, attack_heavy: 4,
+        predator: 4, special: 2, hurt: 2, death: 4, victory: 4
+      },
+      goblin_archer_v2: {
+        idle: 4, run: 4, attack: 4, hurt: 2, death: 4
+      }
     };
 
-    for (const [animKey, frameCount] of Object.entries(rimuruV2Anims)) {
-      for (let i = 0; i < frameCount; i++) {
-        const pngPath = `/public/sprites/rimuru_v2/${animKey}_${i}.png`;
-        try {
-          const img = new Image();
-          img.src = pngPath;
-          await new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-          if (img.complete && img.naturalWidth > 0) {
-            const bitmap = await createImageBitmap(img);
-            this.cache.set(`rimuru_v2_${animKey}_${i}`, bitmap);
-          }
-        } catch (e) {}
+    for (const [packFolder, anims] of Object.entries(v2Packs)) {
+      for (const [animKey, frameCount] of Object.entries(anims)) {
+        for (let i = 0; i < frameCount; i++) {
+          const pngPath = `/public/sprites/${packFolder}/${animKey}_${i}.png`;
+          try {
+            const img = new Image();
+            img.src = pngPath;
+            await new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            });
+            if (img.complete && img.naturalWidth > 0) {
+              const bitmap = await createImageBitmap(img);
+              this.cache.set(`${packFolder}_${animKey}_${i}`, bitmap);
+            }
+          } catch (e) {}
+        }
       }
     }
 
@@ -94,11 +93,14 @@ export class SpriteParser {
   getBitmap(entityKey, animKey, frameIndex, forcePack = null) {
     const pack = forcePack !== null ? forcePack : this.activePack;
     
-    // Check if Pack 2 requested and available for rimuru
-    if (pack === 2 && entityKey === 'rimuru') {
-      const v2Key = `rimuru_v2_${animKey}_${frameIndex}`;
-      if (this.cache.has(v2Key)) {
-        return this.cache.get(v2Key);
+    // Check if Pack 2 requested
+    if (pack === 2) {
+      if (entityKey === 'rimuru') {
+        const v2Key = `rimuru_v2_${animKey}_${frameIndex}`;
+        if (this.cache.has(v2Key)) return this.cache.get(v2Key);
+      } else if (entityKey === 'goblin_archer') {
+        const v2Key = `goblin_archer_v2_${animKey}_${frameIndex}`;
+        if (this.cache.has(v2Key)) return this.cache.get(v2Key);
       }
     }
 

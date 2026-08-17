@@ -76,17 +76,33 @@ export class UISystem {
                 tint: 'rgba(239, 68, 68, 0.35)'
             },
             {
-                id: 'goblin_archer',
+                id: 'goblin_archer_p1',
                 spriteKey: 'goblin_archer',
-                name: 'Goblin Sharpshooter',
+                name: 'Goblin Sharpshooter (Pack 1 [Default])',
                 category: 'Ranged Sniper',
-                title: 'Bone-Bow Poison Archer',
-                lore: 'A hooded goblin marksman equipped with a horn shortbow and venom-dipped arrows. Snipes from elevated cavern ledges and hops backward to maintain distance.',
+                title: 'Bone-Bow Poison Sniper (Locked Scale)',
+                lore: 'Remastered marksman on a strict 16:9 grid with locked anatomical scale, high-tension bow draw, and toxic green arrow streak projectile.',
                 hp: '25',
                 atk: '10',
                 def: '2',
                 speed: '110 px/s',
                 animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: 1,
+                tint: null
+            },
+            {
+                id: 'goblin_archer_p2',
+                spriteKey: 'goblin_archer',
+                name: 'Goblin Sharpshooter (Pack 2 [Variant])',
+                category: 'Ranged Sniper',
+                title: 'Bone-Bow Marksman (Variant)',
+                lore: 'Alternative hooded goblin marksman variant with extended draw animations and green venom aura.',
+                hp: '25',
+                atk: '10',
+                def: '2',
+                speed: '110 px/s',
+                animations: ['idle', 'run', 'attack', 'hurt', 'death'],
+                forcePack: 2,
                 tint: null
             },
             {
