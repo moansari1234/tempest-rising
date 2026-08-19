@@ -3,29 +3,29 @@ export class InputManager {
     this.keys = {};
     this.previousKeys = {};
     this.actionMap = {
-      'moveLeft': ['ArrowLeft', 'a', 'A'],
-      'moveRight': ['ArrowRight', 'd', 'D'],
-      'moveUp': ['ArrowUp', 'w', 'W'],
-      'moveDown': ['ArrowDown', 's', 'S'],
-      'jump': [' '], // Spacebar
-      'dash': ['Shift'],
-      'attackLight': ['z', 'Z'],
-      'attackHeavy': ['x', 'X'],
-      'parry': ['c', 'C'],
-      'absorb': ['e', 'E'],
-      'skillPredator': ['e', 'E'],
-      'skill1': ['1'],
-      'skill2': ['2'],
-      'skill3': ['3'],
-      'skill4': ['4'],
-      'pause': ['Escape', 'p', 'P'],
-      'quit': ['q', 'Q'],
-      'interact': ['Enter', 'e', 'E'],
-      'viewAssets': ['v', 'V'],
-      'toggleStatus': ['Tab', 'i', 'I', 'b', 'B'],
-      'togglePack': ['t', 'T'],
-      'stepBack': ['j', 'J', '['],
-      'stepForward': ['k', 'K', ']']
+      'moveLeft': ['ArrowLeft', 'a', 'A', 'KeyA'],
+      'moveRight': ['ArrowRight', 'd', 'D', 'KeyD'],
+      'moveUp': ['ArrowUp', 'w', 'W', 'KeyW'],
+      'moveDown': ['ArrowDown', 's', 'S', 'KeyS'],
+      'jump': [' ', 'Space', 'Spacebar', 'ArrowUp', 'w', 'W', 'KeyW', 'Up'], // Spacebar or Up/W
+      'dash': ['Shift', 'ShiftLeft', 'ShiftRight'],
+      'attackLight': ['z', 'Z', 'KeyZ', 'j', 'J'],
+      'attackHeavy': ['x', 'X', 'KeyX', 'k', 'K'],
+      'parry': ['c', 'C', 'KeyC', 'l', 'L'],
+      'absorb': ['e', 'E', 'KeyE'],
+      'skillPredator': ['e', 'E', 'KeyE'],
+      'skill1': ['1', 'Digit1'],
+      'skill2': ['2', 'Digit2'],
+      'skill3': ['3', 'Digit3'],
+      'skill4': ['4', 'Digit4'],
+      'pause': ['Escape', 'p', 'P', 'KeyP'],
+      'quit': ['q', 'Q', 'KeyQ'],
+      'interact': ['Enter', 'e', 'E', 'KeyE'],
+      'viewAssets': ['v', 'V', 'KeyV'],
+      'toggleStatus': ['Tab', 'i', 'I', 'KeyI', 'b', 'B', 'KeyB'],
+      'togglePack': ['t', 'T', 'KeyT'],
+      'stepBack': ['j', 'J', '[', 'BracketLeft'],
+      'stepForward': ['k', 'K', ']', 'BracketRight']
     };
     
     // Store timing for input buffering
@@ -67,18 +67,21 @@ export class InputManager {
   }
 
   onKeyDown(e) {
-    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+    if ([' ', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key) || e.code === 'Space') {
       e.preventDefault();
     }
     this.keys[e.key] = true;
+    if (e.code) this.keys[e.code] = true;
     this.inputTimestamps[e.key] = performance.now();
+    if (e.code) this.inputTimestamps[e.code] = performance.now();
   }
 
   onKeyUp(e) {
-    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+    if ([' ', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key) || e.code === 'Space') {
       e.preventDefault();
     }
     this.keys[e.key] = false;
+    if (e.code) this.keys[e.code] = false;
   }
 
   update() {

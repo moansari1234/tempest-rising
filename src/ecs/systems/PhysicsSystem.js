@@ -235,8 +235,9 @@ export class PhysicsSystem {
               }
           }
 
-          // Jump (with coyote time and double jump)
-          if (inputManager.isActionJustPressed('jump')) {
+          // Jump (with coyote time, input buffer, and double jump)
+          const wantsJump = inputManager.isActionJustPressed('jump') || inputManager.wasActionPressedWithin('jump', 150);
+          if (wantsJump) {
               if (input.coyoteTimer > 0) {
                   velocity.vy = CONSTANTS.JUMP_FORCE;
                   input.coyoteTimer = 0;

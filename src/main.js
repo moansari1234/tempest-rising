@@ -125,6 +125,7 @@ class Game {
     while (this.accumulator >= this.timeStep) {
       this.update(this.timeStep);
       this.accumulator -= this.timeStep;
+      this.inputManager.update();
     }
 
     // Render whenever animation frame triggers
