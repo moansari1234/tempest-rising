@@ -190,6 +190,47 @@ class Game {
         }
     }
 
+    if (state === GameState.GAME_OVER) {
+        if (this.inputManager.isActionJustPressed('jump') || this.inputManager.keys['r'] || this.inputManager.keys['R'] || this.inputManager.keys['Enter']) {
+            // Revive player at cavern entrance
+            const players = this.world.queryEntities([Transform, PlayerInput, Health, Velocity]);
+            for (const pId of players) {
+                const pTrans = this.world.getComponent(pId, Transform);
+                const pHealth = this.world.getComponent(pId, Health);
+                const pVel = this.world.getComponent(pId, Velocity);
+                const pInput = this.world.getComponent(pId, PlayerInput);
+                const pSprite = this.world.getComponent(pId, Sprite);
+
+                pHealth.hp = pHealth.maxHp;
+                pHealth.mp = pHealth.maxMp;
+                pHealth.alive = true;
+                pHealth.deathTimer = 0;
+                pHealth.iFrameTimer = 2.5; // 2.5s revive invulnerability
+                pTrans.x = 80;
+                pTrans.y = 420;
+                pVel.vx = 0;
+                pVel.vy = 0;
+                pInput.state = 'idle';
+                if (pSprite) {
+                    pSprite.currentAnimation = 'idle';
+                    pSprite.frameIndex = 0;
+                }
+            }
+            this.gameStateManager.setState(GameState.PLAYING);
+            this.inputManager.consumeAction('jump');
+            if (this.context.sage) {
+                this.context.sage.notify(
+                    '« ❖ VOICE OF THE WORLD ❖ »',
+                    '«Magicule restructuring complete. Physical form restored.»',
+                    { type: 'info', duration: 4.0 }
+                );
+            }
+        } else if (this.inputManager.isActionJustPressed('quit') || this.inputManager.keys['Escape']) {
+            this.gameStateManager.setState(GameState.MENU);
+            this.inputManager.consumeAction('quit');
+        }
+    }
+
     if (state === GameState.PLAYING || state === GameState.ZEN) {
         if (this.context.hitstopTimer > 0) {
             this.context.hitstopTimer -= dt;

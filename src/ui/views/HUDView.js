@@ -160,12 +160,39 @@ export class HUDView {
             sX += pillW + 6;
         }
 
+        // --- 2.2 MP SPECIAL MAGIC SPELLS STRIP ---
+        const spellsY = skillsY + 22;
+        const currentMp = playerHealth ? (playerHealth.mp || 0) : 0;
+        const spells = [
+            { key: '1', name: 'WATER BLADE', cost: 15, color: '#38bdf8' },
+            { key: '2', name: 'HYDRO SHIELD', cost: 20, color: '#06b6d4' },
+            { key: '3', name: 'BLACK FLAME', cost: 30, color: '#c084fc' },
+            { key: '4', name: 'MEGIDDO', cost: 45, color: '#fde047' }
+        ];
+
+        let spX = hudX;
+        for (const sp of spells) {
+            const hasMp = currentMp >= sp.cost;
+            const spW = 92;
+            ctx.fillStyle = hasMp ? 'rgba(15, 23, 42, 0.92)' : 'rgba(15, 23, 42, 0.45)';
+            ctx.fillRect(spX, spellsY, spW, 18);
+            ctx.strokeStyle = hasMp ? sp.color : '#334155';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(spX, spellsY, spW, 18);
+
+            ctx.fillStyle = hasMp ? sp.color : '#64748b';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`[${sp.key}] ${sp.name} (${sp.cost}M)`, spX + spW / 2, spellsY + 12);
+            spX += spW + 5;
+        }
+
         // --- 3. COMBO STREAK & MULTIPLIER ---
         if (context.comboCount && context.comboCount > 1) {
             ctx.fillStyle = '#facc15';
             ctx.font = 'bold 16px monospace';
             ctx.textAlign = 'left';
-            ctx.fillText(`${context.comboCount}x COMBO!`, hudX, skillsY + 38);
+            ctx.fillText(`${context.comboCount}x COMBO!`, hudX, spellsY + 36);
         }
 
         // --- 4. STAGE / FLOOR INDICATOR ---
