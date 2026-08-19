@@ -177,8 +177,9 @@ export class HUDView {
             ctx.fillStyle = hasMp ? 'rgba(15, 23, 42, 0.92)' : 'rgba(15, 23, 42, 0.45)';
             ctx.fillRect(spX, spellsY, spW, 18);
             ctx.strokeStyle = hasMp ? sp.color : '#334155';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(spX, spellsY, spW, 18);
+            if (context.inputManager && context.inputManager.isClickInRect(spX, spellsY, spW, 18)) {
+                context.inputManager.keys[sp.key] = true;
+            }
 
             ctx.fillStyle = hasMp ? sp.color : '#64748b';
             ctx.font = 'bold 8px monospace';

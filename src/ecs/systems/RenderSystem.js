@@ -369,20 +369,21 @@ export class RenderSystem {
     const playerTransform = players.length > 0 ? world.getComponent(players[0], Transform) : null;
     const playerHealth = players.length > 0 ? world.getComponent(players[0], Health) : null;
 
-    // --- Render Active Projectiles (Poison Arrows) ---
-    const projectiles = world.queryEntities([Transform, Hitbox, Velocity]);
+    // --- Render Active Projectiles & Spell Hitboxes ---
+    const projectiles = world.queryEntities([Transform, Hitbox]);
+    const now = performance.now();
     for (const pId of projectiles) {
       const pTrans = world.getComponent(pId, Transform);
-      const pVel = world.getComponent(pId, Velocity);
       const pHit = world.getComponent(pId, Hitbox);
-      if (pHit && pHit.element === 'poison') {
+      const pVel = world.getComponent(pId, Velocity);
+
+      // 1. Poison Arrow
+      if (pHit && pHit.element === 'poison' && pVel) {
         ctx.save();
         const dir = pVel.vx >= 0 ? 1 : -1;
-        // Arrow shaft
         ctx.fillStyle = '#15803d';
         ctx.fillRect(pTrans.x, pTrans.y + 2, pTrans.width, 3);
 
-        // Glowing arrow head
         ctx.fillStyle = '#22c55e';
         ctx.shadowColor = '#4ade80';
         ctx.shadowBlur = 10;
@@ -394,9 +395,185 @@ export class RenderSystem {
         ctx.closePath();
         ctx.fill();
 
-        // Toxic green particle trail
         ctx.fillStyle = 'rgba(74, 222, 128, 0.5)';
         ctx.fillRect(headX - dir * 22, pTrans.y + 1, 16, 5);
+        ctx.restore();
+      }
+
+      // 2. Water Blade [1] (Piercing Crescent Hydro Slash)
+      else if (pHit && pHit.element === 'water' && pVel) {
+        ctx.save();
+        const dir = pVel.vx >= 0 ? 1 : -1;
+        const cx = pTrans.x + pTrans.width / 2;
+        const cy = pTrans.y + pTrans.height / 2;
+        ctx.translate(cx, cy);
+        if (dir === -1) ctx.scale(-1, 1);
+
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 15;
+
+        // Outer Azure Water Crescent
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, -Math.PI / 2, Math.PI / 2, false);
+        ctx.bezierCurveTo(8, 7, 8, -7, 0, -18);
+        ctx.fill();
+
+        // Inner Luminous Cyan Core
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(2, 0, 15, -Math.PI / 2.3, Math.PI / 2.3, false);
+        ctx.bezierCurveTo(9, 5, 9, -5, 2, -15);
+        ctx.fill();
+
+        // Searing White Cutting Edge
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(4, 0, 12, -Math.PI / 2.8, Math.PI / 2.8, false);
+        ctx.bezierCurveTo(9, 3, 9, -3, 4, -12);
+        ctx.fill();
+
+        // Hydrodynamic Spray Particles
+        for (let w = 0; w < 5; w++) {
+            const wx = -10 - w * 6;
+            const wy = Math.sin(now / 35 + w) * 6;
+            ctx.fillStyle = `rgba(56, 189, 248, ${0.8 - w * 0.15})`;
+            ctx.beginPath();
+            ctx.arc(wx, wy, Math.max(1, 4 - w * 0.7), 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // 3. Black Flame Burst [3] (Demonic Dark Violet Nova)
+      else if (pHit && pHit.element === 'black_flame') {
+        ctx.save();
+        const hCx = pTrans.x + pTrans.width / 2;
+        const hCy = pTrans.y + pTrans.height / 2;
+        ctx.shadowColor = '#c084fc';
+        ctx.shadowBlur = 24;
+
+        // Dark Violet Radial Flame Burst
+        const flameGrad = ctx.createRadialGradient(hCx, hCy, 6, hCx, hCy, 58);
+        flameGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+        flameGrad.addColorStop(0.2, 'rgba(192, 132, 252, 0.9)');
+        flameGrad.addColorStop(0.55, 'rgba(147, 51, 234, 0.7)');
+        flameGrad.addColorStop(1, 'rgba(20, 5, 30, 0)');
+        ctx.fillStyle = flameGrad;
+        ctx.beginPath();
+        ctx.arc(hCx, hCy, 58, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crackling Amethyst Lightning Tendrils
+        ctx.strokeStyle = '#f3e8ff';
+        ctx.lineWidth = 2;
+        for (let l = 0; l < 8; l++) {
+            const angle = (l * Math.PI / 4) + (now / 100);
+            const r = 32 + (l % 3) * 16;
+            ctx.beginPath();
+            ctx.moveTo(hCx, hCy);
+            ctx.lineTo(hCx + Math.cos(angle) * (r * 0.5) + (Math.random() - 0.5) * 10, hCy + Math.sin(angle) * (r * 0.5));
+            ctx.lineTo(hCx + Math.cos(angle) * r, hCy + Math.sin(angle) * r);
+            ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 4. Megiddo: Rain of Light [4] (Orbital Searing Laser Pillars)
+      else if (pHit && pHit.element === 'megiddo') {
+        ctx.save();
+        const rayX = pTrans.x + pTrans.width / 2;
+        const groundY = pTrans.y + pTrans.height;
+
+        // Outer Celestial Corona
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.45)';
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 30;
+        ctx.fillRect(rayX - 18, 0, 36, groundY);
+
+        // Blazing Solar Ray
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.9)';
+        ctx.fillRect(rayX - 9, 0, 18, groundY);
+
+        // White-hot High-intensity Core
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(rayX - 3, 0, 6, groundY);
+
+        // Ground Impact Crater & Shockwave Rings
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(rayX, groundY, 32, 9, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(rayX, groundY, 48, 14, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // --- Render Gluttony Hydro Barrier [2] on Player ---
+    if (players.length > 0) {
+      const pId = players[0];
+      const pTrans = world.getComponent(pId, Transform);
+      const pInput = world.getComponent(pId, PlayerInput);
+      const pHealth = world.getComponent(pId, Health);
+
+      if (pTrans && pHealth && pHealth.alive && (pInput.state === 'parry' || pInput.state === 'barrier')) {
+        const pCx = pTrans.x + pTrans.width / 2;
+        const pCy = pTrans.y + pTrans.height / 2;
+        ctx.save();
+        ctx.translate(pCx, pCy);
+
+        const rot = now / 320;
+        ctx.rotate(rot);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#06b6d4';
+        ctx.shadowBlur = 20;
+
+        // Outer Rotating Hexagonal Forcefield
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const hx = Math.cos(angle) * 34;
+            const hy = Math.sin(angle) * 34;
+            if (i === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.25)';
+        ctx.fill();
+        ctx.stroke();
+
+        // Inner Counter-rotating Shield
+        ctx.rotate(-rot * 2.2);
+        ctx.strokeStyle = '#a5f3fc';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const hx = Math.cos(angle) * 24;
+            const hy = Math.sin(angle) * 24;
+            if (i === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // 3 Orbiting Magisferes
+        for (let o = 0; o < 3; o++) {
+            const orbAngle = (o * Math.PI * 2 / 3) + (now / 200);
+            const ox = Math.cos(orbAngle) * 38;
+            const oy = Math.sin(orbAngle) * 38;
+            ctx.fillStyle = '#67e8f9';
+            ctx.beginPath();
+            ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
       }
     }

@@ -38,29 +38,40 @@ export class PhysicsSystem {
       }
 
       // --- 3. SPECIAL MP MAGIC SPELLS ---
+      const isSkill1 = inputManager.isActionJustPressed('skill1') || (inputManager.keys['1'] && !inputManager.previousKeys['1']) || (inputManager.keys['Digit1'] && !inputManager.previousKeys['Digit1']);
+      const isSkill2 = inputManager.isActionJustPressed('skill2') || (inputManager.keys['2'] && !inputManager.previousKeys['2']) || (inputManager.keys['Digit2'] && !inputManager.previousKeys['Digit2']);
+      const isSkill3 = inputManager.isActionJustPressed('skill3') || (inputManager.keys['3'] && !inputManager.previousKeys['3']) || (inputManager.keys['Digit3'] && !inputManager.previousKeys['Digit3']);
+      const isSkill4 = inputManager.isActionJustPressed('skill4') || (inputManager.keys['4'] && !inputManager.previousKeys['4']) || (inputManager.keys['Digit4'] && !inputManager.previousKeys['Digit4']);
+
       // [1] Water Blade (15 MP)
-      if (inputManager.isActionJustPressed('skill1') && health && health.mp >= 15) {
+      if (isSkill1 && health && health.mp >= 15) {
           health.mp -= 15;
           inputManager.consumeAction('skill1');
+          input.state = 'attack_light';
+          input.stateTimer = 0.35;
+          if (sprite) {
+              sprite.currentAnimation = 'attack_light';
+              sprite.frameIndex = 0;
+              sprite.frameTimer = 0;
+          }
           if (context.audio) context.audio.play('attack_light');
           
           const projId = world.createEntity();
           const dir = transform.facing === 'right' ? 1 : -1;
-          const pX = transform.facing === 'right' ? transform.x + transform.width + 5 : transform.x - 25;
-          world.addComponent(projId, new Transform(pX, transform.y + 8, 24, 16, transform.facing));
-          world.addComponent(projId, new Velocity(dir * 550, 0));
+          const pX = transform.facing === 'right' ? transform.x + transform.width + 5 : transform.x - 30;
+          world.addComponent(projId, new Transform(pX, transform.y + 6, 32, 20, transform.facing));
+          world.addComponent(projId, new Velocity(dir * 580, 0));
           
-          const hb = new Hitbox(id, 35, 300, 1.2, CONSTANTS.HITSTOP_LIGHT, 'water');
+          const hb = new Hitbox(id, 35, 300, 1.5, CONSTANTS.HITSTOP_LIGHT, 'water');
           hb.element = 'water';
           world.addComponent(projId, hb);
-          world.addComponent(projId, new Sprite('rimuru'));
 
           if (context.floaterQueue) {
               context.floaterQueue.push({ x: transform.x + 16, y: transform.y - 12, text: '🌊 WATER BLADE! (-15 MP)', color: '#38bdf8', lifetime: 1.5, maxLifetime: 1.5 });
           }
       }
       // [2] Gluttony Hydro Barrier (20 MP)
-      else if (inputManager.isActionJustPressed('skill2') && health && health.mp >= 20) {
+      else if (isSkill2 && health && health.mp >= 20) {
           health.mp -= 20;
           inputManager.consumeAction('skill2');
           input.state = 'parry';
@@ -72,14 +83,21 @@ export class PhysicsSystem {
           }
       }
       // [3] Black Flame Burst (30 MP)
-      else if (inputManager.isActionJustPressed('skill3') && health && health.mp >= 30) {
+      else if (isSkill3 && health && health.mp >= 30) {
           health.mp -= 30;
           inputManager.consumeAction('skill3');
+          input.state = 'attack_heavy';
+          input.stateTimer = 0.50;
+          if (sprite) {
+              sprite.currentAnimation = 'attack_heavy';
+              sprite.frameIndex = 0;
+              sprite.frameTimer = 0;
+          }
           if (context.audio) context.audio.play('attack_heavy');
           
           const hbId = world.createEntity();
           world.addComponent(hbId, new Transform(transform.x - 45, transform.y - 30, 120, 80));
-          const hb = new Hitbox(id, 60, 450, 0.25, CONSTANTS.HITSTOP_HEAVY, 'fire');
+          const hb = new Hitbox(id, 60, 450, 0.4, CONSTANTS.HITSTOP_HEAVY, 'fire');
           hb.element = 'black_flame';
           world.addComponent(hbId, hb);
 
@@ -89,9 +107,16 @@ export class PhysicsSystem {
           }
       }
       // [4] Megiddo: Rain of Light (45 MP)
-      else if (inputManager.isActionJustPressed('skill4') && health && health.mp >= 45) {
+      else if (isSkill4 && health && health.mp >= 45) {
           health.mp -= 45;
           inputManager.consumeAction('skill4');
+          input.state = 'attack_heavy';
+          input.stateTimer = 0.70;
+          if (sprite) {
+              sprite.currentAnimation = 'attack_heavy';
+              sprite.frameIndex = 0;
+              sprite.frameTimer = 0;
+          }
           if (context.audio) context.audio.play('boss_roar');
           
           const targets = world.queryEntities([Transform, AI, Health]);
@@ -101,7 +126,7 @@ export class PhysicsSystem {
               if (tHealth && tHealth.alive) {
                   const rayId = world.createEntity();
                   world.addComponent(rayId, new Transform(tTrans.x - 10, tTrans.y - 40, 40, 60));
-                  const hb = new Hitbox(id, 100, 500, 0.3, CONSTANTS.HITSTOP_CRITICAL, 'light');
+                  const hb = new Hitbox(id, 100, 500, 0.5, CONSTANTS.HITSTOP_CRITICAL, 'light');
                   hb.element = 'megiddo';
                   world.addComponent(rayId, hb);
               }

@@ -36,9 +36,9 @@ export class ZenSandboxHUD {
         ctx.strokeRect(toolbarX, toolbarY, toolbarW, toolbarH);
 
         const buttons = [
-            { key: '1', label: 'GOBLIN', color: '#4ade80', action: () => this.spawnEnemy(world, 'goblin') },
-            { key: '2', label: 'ARCHER', color: '#38bdf8', action: () => this.spawnEnemy(world, 'archer') },
-            { key: '3', label: 'BOSS SERPENT', color: '#f87171', action: () => this.spawnEnemy(world, 'boss') },
+            { key: '7', label: 'GOBLIN', color: '#4ade80', action: () => this.spawnEnemy(world, 'goblin') },
+            { key: '8', label: 'ARCHER', color: '#38bdf8', action: () => this.spawnEnemy(world, 'archer') },
+            { key: '9', label: 'BOSS SERPENT', color: '#f87171', action: () => this.spawnEnemy(world, 'boss') },
             { key: 'G', label: `GOD MODE: ${this.godMode ? 'ON' : 'OFF'}`, color: this.godMode ? '#facc15' : '#94a3b8', action: () => { this.godMode = !this.godMode; } },
             { key: 'C', label: 'CLEAR', color: '#f43f5e', action: () => this.clearEnemies(world) },
             { key: 'M', label: 'MENU', color: '#cbd5e1', action: () => gameStateManager.setState(GameState.MENU) }
@@ -52,11 +52,9 @@ export class ZenSandboxHUD {
                 b.action();
             }
 
-            // Keyboard shortcuts
-            if (inputManager.keys[b.key] || inputManager.keys[b.key.toLowerCase()]) {
+            // Keyboard shortcuts (7, 8, 9, G, C, M)
+            if (inputManager.isActionJustPressed(b.key) || (inputManager.keys[b.key] && !inputManager.previousKeys[b.key])) {
                 b.action();
-                inputManager.keys[b.key] = false;
-                inputManager.keys[b.key.toLowerCase()] = false;
             }
 
             ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
