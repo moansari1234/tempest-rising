@@ -47,10 +47,10 @@ export class PhysicsSystem {
       if (isSkill1 && health && health.mp >= 15) {
           health.mp -= 15;
           inputManager.consumeAction('skill1');
-          input.state = 'attack_light';
-          input.stateTimer = 0.35;
+          input.state = 'water_blade';
+          input.stateTimer = 0.32;
           if (sprite) {
-              sprite.currentAnimation = 'attack_light';
+              sprite.currentAnimation = 'water_blade';
               sprite.frameIndex = 0;
               sprite.frameTimer = 0;
           }
@@ -65,6 +65,7 @@ export class PhysicsSystem {
           const hb = new Hitbox(id, 35, 300, 1.5, CONSTANTS.HITSTOP_LIGHT, 'water');
           hb.element = 'water';
           world.addComponent(projId, hb);
+          world.addComponent(projId, new Sprite('water_blade_proj'));
 
           if (context.floaterQueue) {
               context.floaterQueue.push({ x: transform.x + 16, y: transform.y - 12, text: '🌊 WATER BLADE! (-15 MP)', color: '#38bdf8', lifetime: 1.5, maxLifetime: 1.5 });
@@ -74,9 +75,14 @@ export class PhysicsSystem {
       else if (isSkill2 && health && health.mp >= 20) {
           health.mp -= 20;
           inputManager.consumeAction('skill2');
-          input.state = 'parry';
+          input.state = 'barrier';
           input.stateTimer = 2.0;
           health.iFrameTimer = 2.0;
+          if (sprite) {
+              sprite.currentAnimation = 'barrier';
+              sprite.frameIndex = 0;
+              sprite.frameTimer = 0;
+          }
           if (context.audio) context.audio.play('parry');
           if (context.floaterQueue) {
               context.floaterQueue.push({ x: transform.x + 16, y: transform.y - 12, text: '🛡️ HYDRO BARRIER! (-20 MP)', color: '#06b6d4', lifetime: 1.5, maxLifetime: 1.5 });
@@ -86,10 +92,10 @@ export class PhysicsSystem {
       else if (isSkill3 && health && health.mp >= 30) {
           health.mp -= 30;
           inputManager.consumeAction('skill3');
-          input.state = 'attack_heavy';
-          input.stateTimer = 0.50;
+          input.state = 'black_flame';
+          input.stateTimer = 0.40;
           if (sprite) {
-              sprite.currentAnimation = 'attack_heavy';
+              sprite.currentAnimation = 'black_flame';
               sprite.frameIndex = 0;
               sprite.frameTimer = 0;
           }
@@ -100,6 +106,7 @@ export class PhysicsSystem {
           const hb = new Hitbox(id, 60, 450, 0.4, CONSTANTS.HITSTOP_HEAVY, 'fire');
           hb.element = 'black_flame';
           world.addComponent(hbId, hb);
+          world.addComponent(hbId, new Sprite('black_flame_vfx'));
 
           if (context.camera) context.camera.shake(CONSTANTS.SCREEN_SHAKE_HEAVY.amp, CONSTANTS.SCREEN_SHAKE_HEAVY.duration * 1000);
           if (context.floaterQueue) {
@@ -110,10 +117,10 @@ export class PhysicsSystem {
       else if (isSkill4 && health && health.mp >= 45) {
           health.mp -= 45;
           inputManager.consumeAction('skill4');
-          input.state = 'attack_heavy';
-          input.stateTimer = 0.70;
+          input.state = 'megiddo';
+          input.stateTimer = 0.60;
           if (sprite) {
-              sprite.currentAnimation = 'attack_heavy';
+              sprite.currentAnimation = 'megiddo';
               sprite.frameIndex = 0;
               sprite.frameTimer = 0;
           }
@@ -129,6 +136,7 @@ export class PhysicsSystem {
                   const hb = new Hitbox(id, 100, 500, 0.5, CONSTANTS.HITSTOP_CRITICAL, 'light');
                   hb.element = 'megiddo';
                   world.addComponent(rayId, hb);
+                  world.addComponent(rayId, new Sprite('megiddo_beam_vfx'));
               }
           }
           if (context.camera) context.camera.shake(CONSTANTS.SCREEN_SHAKE_BOSS.amp, CONSTANTS.SCREEN_SHAKE_BOSS.duration * 1000);
@@ -156,7 +164,13 @@ export class PhysicsSystem {
       }
 
       // State Machine Transitions
-      if (input.state === 'dash') {
+      if (['water_blade', 'barrier', 'black_flame', 'megiddo'].includes(input.state)) {
+          input.stateTimer -= dt;
+          velocity.vx = 0;
+          if (input.stateTimer <= 0) {
+              input.state = 'idle';
+          }
+      } else if (input.state === 'dash') {
           input.stateTimer -= dt;
           velocity.vy = 0; // suspend gravity
           if (input.stateTimer <= 0) {

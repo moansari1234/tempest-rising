@@ -10,7 +10,23 @@ export const AnimationData = {
     hurt: { frameTime: 0.12, frames: 2, loop: false },
     death: { frameTime: 0.16, frames: 4, loop: false },
     victory: { frameTime: 0.14, frames: 4, loop: true },
-    special: { frameTime: 0.15, frames: 2, loop: true }
+    special: { frameTime: 0.15, frames: 2, loop: true },
+    water_blade: { frameTime: 0.08, frames: 4, loop: false },
+    barrier: { frameTime: 0.12, frames: 4, loop: true },
+    black_flame: { frameTime: 0.10, frames: 4, loop: false },
+    megiddo: { frameTime: 0.12, frames: 4, loop: false }
+  },
+  water_blade_proj: {
+    idle: { frameTime: 0.06, frames: 4, loop: true }
+  },
+  black_flame_vfx: {
+    idle: { frameTime: 0.08, frames: 4, loop: false }
+  },
+  barrier_vfx: {
+    idle: { frameTime: 0.10, frames: 4, loop: true }
+  },
+  megiddo_beam_vfx: {
+    idle: { frameTime: 0.10, frames: 4, loop: false }
   },
   goblin: {
     idle: { frameTime: 0.50, frames: 4, loop: true },

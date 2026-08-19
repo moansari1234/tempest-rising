@@ -117,7 +117,15 @@ export class RenderSystem {
           }
       } else if (input) {
           const state = input.state;
-          if (state === 'attack_light') {
+          if (state === 'water_blade') {
+              targetAnim = 'water_blade';
+          } else if (state === 'barrier') {
+              targetAnim = 'barrier';
+          } else if (state === 'black_flame') {
+              targetAnim = 'black_flame';
+          } else if (state === 'megiddo') {
+              targetAnim = 'megiddo';
+          } else if (state === 'attack_light') {
               targetAnim = 'attack_light';
           } else if (state === 'attack_heavy' || state === 'attack_heavy_strike') {
               targetAnim = 'attack_heavy';
