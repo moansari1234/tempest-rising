@@ -21,7 +21,7 @@ export class TitleSystem {
             'subterranean_predator': {
                 id: 'subterranean_predator',
                 name: 'Subterranean Predator',
-                desc: 'Vanquished the ancient Tempest Serpent Leviathan.',
+                desc: 'Vanquished the apex Giant Tempest Serpent (黒蛇) of the Sealed Cave.',
                 bonus: '+5 ATK, +5 DEF',
                 unlocked: false
             },

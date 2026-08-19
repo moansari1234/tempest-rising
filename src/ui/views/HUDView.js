@@ -182,38 +182,75 @@ export class HUDView {
             ctx.fillText(`🏰 ${context.levelManager.stageName || 'Floor 1-1'}`, canvas.width - 130, 33);
         }
 
-        // --- 5. BOSS HEALTH BAR (IF ACTIVE) ---
+        // --- 5. BOSS HEALTH BAR (TOP CENTER - ACTIVE ON ENGAGEMENT) ---
+        const playerEntities = world.queryEntities([Transform, PlayerInput]);
+        let playerX = 0, playerY = 0;
+        if (playerEntities.length > 0) {
+            const pTransform = world.getComponent(playerEntities[0], Transform);
+            playerX = pTransform.x;
+            playerY = pTransform.y;
+        }
+
         const bossEntities = world.queryEntities([AI, Health, Transform]);
         for (const bossId of bossEntities) {
             const ai = world.getComponent(bossId, AI);
             const bossHp = world.getComponent(bossId, Health);
+            const bTransform = world.getComponent(bossId, Transform);
+
             if (ai.type === 'boss_serpent' && bossHp.alive) {
-                const bBarW = 440;
-                const bBarH = 16;
-                const bBarX = (canvas.width - bBarW) / 2;
-                const bBarY = canvas.height - 42;
+                const distToPlayer = Math.hypot(bTransform.x - playerX, bTransform.y - playerY);
+                const isEngaged = distToPlayer < 650 || ai.state === 'chase' || ai.state === 'attack' || bossHp.hp < bossHp.maxHp;
 
-                ctx.fillStyle = 'rgba(10, 15, 26, 0.95)';
-                ctx.fillRect(bBarX - 8, bBarY - 22, bBarW + 16, bBarH + 30);
-                ctx.strokeStyle = '#a855f7';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(bBarX - 8, bBarY - 22, bBarW + 16, bBarH + 30);
+                if (isEngaged) {
+                    const bBarW = 460;
+                    const bBarH = 14;
+                    const bBarX = (canvas.width - bBarW) / 2;
+                    const bBarY = 24;
 
-                ctx.fillStyle = '#c084fc';
-                ctx.font = 'bold 12px monospace';
-                ctx.textAlign = 'left';
-                ctx.fillText('🐉 TEMPEST SERPENT (LEVIATHAN)', bBarX, bBarY - 6);
+                    // Luxury Boss Frame Backdrop
+                    const bgGrad = ctx.createLinearGradient(bBarX, bBarY - 18, bBarX, bBarY + bBarH + 6);
+                    bgGrad.addColorStop(0, 'rgba(15, 10, 28, 0.96)');
+                    bgGrad.addColorStop(1, 'rgba(5, 5, 12, 0.94)');
+                    ctx.fillStyle = bgGrad;
+                    ctx.fillRect(bBarX - 10, bBarY - 18, bBarW + 20, bBarH + 26);
+                    ctx.strokeStyle = '#c084fc';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(bBarX - 10, bBarY - 18, bBarW + 20, bBarH + 26);
 
-                const bRatio = Math.max(0, bossHp.hp / bossHp.maxHp);
-                ctx.fillStyle = '#450a0a';
-                ctx.fillRect(bBarX, bBarY, bBarW, bBarH);
-                ctx.fillStyle = '#dc2626';
-                ctx.fillRect(bBarX, bBarY, bBarW * bRatio, bBarH);
+                    // Boss Name & Title Header
+                    ctx.fillStyle = '#fde047';
+                    ctx.font = 'bold 10px "Cinzel", serif, monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('⚜️ GIANT TEMPEST SERPENT — APEX PREDATOR (黒蛇)', bBarX, bBarY - 5);
 
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 9px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${Math.round(bossHp.hp)} / ${bossHp.maxHp}`, bBarX + bBarW / 2, bBarY + 12);
+                    ctx.fillStyle = '#c084fc';
+                    ctx.font = 'bold 9px monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText('THREAT: A-RANK CALAMITY', bBarX + bBarW, bBarY - 5);
+
+                    // Health Bar Fill
+                    const bRatio = Math.max(0, bossHp.hp / bossHp.maxHp);
+                    ctx.fillStyle = '#3b0764';
+                    ctx.fillRect(bBarX, bBarY, bBarW, bBarH);
+                    
+                    const hpGrad = ctx.createLinearGradient(bBarX, bBarY, bBarX + bBarW, bBarY);
+                    hpGrad.addColorStop(0, '#dc2626');
+                    hpGrad.addColorStop(0.5, '#ef4444');
+                    hpGrad.addColorStop(1, '#f97316');
+                    ctx.fillStyle = hpGrad;
+                    ctx.fillRect(bBarX, bBarY, bBarW * bRatio, bBarH);
+
+                    // Border
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(bBarX, bBarY, bBarW, bBarH);
+
+                    // HP Number Text
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 9px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`${Math.round(bossHp.hp)} / ${bossHp.maxHp}`, bBarX + bBarW / 2, bBarY + 11);
+                }
             }
         }
     }
