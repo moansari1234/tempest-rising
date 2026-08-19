@@ -1,4 +1,4 @@
-import { AI, Health, Transform } from '../../ecs/Components.js';
+import { AI, Health, Transform, PlayerInput } from '../../ecs/Components.js';
 
 export class HUDView {
     constructor() {
