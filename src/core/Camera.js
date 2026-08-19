@@ -47,9 +47,12 @@ export class Camera {
 
   update(dt) {
     if (this.target) {
+      const targetCenterX = this.target.x + (this.target.width || 32) / 2;
+      const targetCenterY = this.target.y + (this.target.height || 32) / 2;
+
       // Calculate target position with horizontal lead and framing
-      let targetX = this.target.x - this.viewportWidth / 2 / this.zoom;
-      let targetY = this.target.y - this.viewportHeight / 2 / this.zoom;
+      let targetX = targetCenterX - (this.viewportWidth / 2) / this.zoom;
+      let targetY = targetCenterY - (this.viewportHeight / 2) / this.zoom;
 
       // Apply look-ahead lead in facing direction
       if (this.target.facing === 'right') {
@@ -59,8 +62,9 @@ export class Camera {
       }
 
       // Smooth Lerp follow
-      this.x += (targetX - this.x) * CONSTANTS.CAMERA_LERP;
-      this.y += (targetY - this.y) * CONSTANTS.CAMERA_LERP;
+      const lerpFactor = CONSTANTS.CAMERA_LERP || 0.1;
+      this.x += (targetX - this.x) * lerpFactor;
+      this.y += (targetY - this.y) * lerpFactor;
     }
 
     // Clamp to level bounds

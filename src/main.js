@@ -197,6 +197,15 @@ class Game {
         }
         this.world.updateLogic(dt, this.context);
         this.greatSage.update(dt, this.context);
+
+        // Ensure camera has active player target
+        if (!this.camera.target) {
+            const players = this.world.queryEntities([Transform, PlayerInput]);
+            if (players.length > 0) {
+                this.camera.setTarget(this.world.getComponent(players[0], Transform));
+            }
+        }
+        this.camera.update(dt);
     }
   }
 
