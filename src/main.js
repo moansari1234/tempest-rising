@@ -56,6 +56,12 @@ class Game {
     this.world.registerSystem(new RenderSystem());
     this.world.registerSystem(new UISystem());
 
+    this.titleBgImage = new Image();
+    this.titleBgImage.src = '/public/sprites/backgrounds/title_bg.jpg';
+    this.titleBgImage.onerror = () => {
+      this.titleBgImage.src = 'public/sprites/backgrounds/title_bg.jpg';
+    };
+
     // Setup Game Context to pass to systems
     this.context = {
       canvas: this.canvas,
@@ -70,6 +76,7 @@ class Game {
       titleSystem: this.titleSystem,
       settingsManager: this.settingsManager,
       sage: this.greatSage,
+      titleBgImage: this.titleBgImage,
       floaterQueue: [],
       world: this.world,
       hitstopTimer: 0 // Global Hitstop

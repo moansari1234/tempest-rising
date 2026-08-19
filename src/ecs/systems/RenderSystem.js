@@ -48,14 +48,14 @@ export class RenderSystem {
 
     const viewX = camera.x;
     const viewY = camera.y;
-    const viewW = camera.viewportWidth || CONSTANTS.CANVAS_WIDTH;
-    const viewH = camera.viewportHeight || CONSTANTS.CANVAS_HEIGHT;
+    const viewW = camera.viewportWidth || CONSTANTS.NATIVE_WIDTH || 960;
+    const viewH = camera.viewportHeight || CONSTANTS.NATIVE_HEIGHT || 540;
 
     // Layer 1: Far Abyss & Cavern Bridges (0.15x parallax)
     if (bgFar) {
       const pFarX = viewX * 0.15;
-      const bgW = bgFar.width * 2.0;
-      const bgH = viewH;
+      const bgW = (bgFar.width || bgFar.naturalWidth || 960) * 1.5;
+      const bgH = Math.max(viewH, (bgFar.height || bgFar.naturalHeight || 540));
       const startX = Math.floor((viewX - pFarX) / bgW) * bgW + pFarX;
       for (let bx = startX - bgW; bx < viewX + viewW + bgW; bx += bgW) {
         ctx.drawImage(bgFar, bx, viewY, bgW, bgH);
@@ -65,8 +65,8 @@ export class RenderSystem {
     // Layer 2: Bioluminescent Mushroom Forest & Waterfalls (0.35x parallax)
     if (bgMid) {
       const pMidX = viewX * 0.35;
-      const bgW = bgMid.width * 2.0;
-      const bgH = viewH;
+      const bgW = (bgMid.width || bgMid.naturalWidth || 960) * 1.5;
+      const bgH = Math.max(viewH, (bgMid.height || bgMid.naturalHeight || 540));
       const startX = Math.floor((viewX - pMidX) / bgW) * bgW + pMidX;
       for (let bx = startX - bgW; bx < viewX + viewW + bgW; bx += bgW) {
         ctx.drawImage(bgMid, bx, viewY, bgW, bgH);
@@ -76,8 +76,8 @@ export class RenderSystem {
     // Layer 3: Foreground Pillars & Hanging Vines (0.65x parallax)
     if (bgNear) {
       const pNearX = viewX * 0.65;
-      const bgW = bgNear.width * 2.0;
-      const bgH = viewH;
+      const bgW = (bgNear.width || bgNear.naturalWidth || 960) * 1.5;
+      const bgH = Math.max(viewH, (bgNear.height || bgNear.naturalHeight || 540));
       const startX = Math.floor((viewX - pNearX) / bgW) * bgW + pNearX;
       for (let bx = startX - bgW; bx < viewX + viewW + bgW; bx += bgW) {
         ctx.drawImage(bgNear, bx, viewY, bgW, bgH);

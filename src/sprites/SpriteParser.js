@@ -691,5 +691,62 @@ export class SpriteParser {
       ctx.fillRect(13, 26, 2, 5);
       ctx.fillRect(16, 26, 1, 4);
     }));
+
+    // --- 11. PARALLAX BACKGROUNDS & TITLE ASSETS ---
+    const loadBgImage = async (cacheKey, path) => {
+      try {
+        const img = new Image();
+        img.src = path;
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            const altPath = path.startsWith('/') ? path.slice(1) : '/' + path;
+            const img2 = new Image();
+            img2.onload = () => resolve(img2);
+            img2.onerror = () => reject();
+            img2.src = altPath;
+          };
+        });
+        this.cache.set(cacheKey, img);
+      } catch (e) {
+        // Fallback procedural canvas if file isn't loaded
+        const fallback = document.createElement('canvas');
+        fallback.width = 960;
+        fallback.height = 540;
+        const fctx = fallback.getContext('2d');
+        if (cacheKey.includes('far')) {
+          const grad = fctx.createLinearGradient(0, 0, 0, 540);
+          grad.addColorStop(0, '#030712');
+          grad.addColorStop(0.6, '#0f172a');
+          grad.addColorStop(1, '#020617');
+          fctx.fillStyle = grad;
+          fctx.fillRect(0, 0, 960, 540);
+          fctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+          for (let i = 0; i < 20; i++) {
+            fctx.beginPath();
+            fctx.arc((i * 48) % 960, 100 + (i * 37) % 300, 1.5, 0, Math.PI * 2);
+            fctx.fill();
+          }
+        } else if (cacheKey.includes('mid')) {
+          fctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+          fctx.fillRect(0, 0, 960, 540);
+          fctx.fillStyle = 'rgba(14, 165, 233, 0.2)';
+          for (let i = 0; i < 8; i++) {
+            fctx.fillRect(i * 120 + 20, 200, 40, 340);
+          }
+        } else {
+          fctx.fillStyle = 'rgba(2, 6, 23, 0.3)';
+          fctx.fillRect(0, 0, 960, 540);
+        }
+        this.cache.set(cacheKey, fallback);
+      }
+    };
+
+    await Promise.all([
+      loadBgImage('background_bg_cavern_far', '/public/sprites/backgrounds/bg_cavern_far.png'),
+      loadBgImage('background_bg_cavern_mid', '/public/sprites/backgrounds/bg_cavern_mid.png'),
+      loadBgImage('background_bg_cavern_near', '/public/sprites/backgrounds/bg_cavern_near.png'),
+      loadBgImage('background_title_bg', '/public/sprites/backgrounds/title_bg.jpg')
+    ]);
   }
 }
