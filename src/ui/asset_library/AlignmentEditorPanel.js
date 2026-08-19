@@ -4,6 +4,14 @@ export class AlignmentEditorPanel {
         const rightX = 708;
         const rightY = 42;
         const rightW = 234;
+        const rightH = 450;
+
+        // Panel Backdrop
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(rightX, rightY, rightW, rightH);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(rightX, rightY, rightW, rightH);
 
         // --- 1. CLEAN TOP TABS: [ ALIGN ] [ SPEED ] [ STATS ] ---
         const tabW = (rightW - 20) / 3;

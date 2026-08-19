@@ -160,54 +160,8 @@ export class AssetLibraryView {
         this.viewport.render(ctx, canvas, state, currentEntity, currentAnimKey, animList, totalFrames, context);
         this.scrubber.render(ctx, state, currentEntity, currentAnimKey, totalFrames, context);
 
-        // Right Column Tabs
-        const rightX = 708;
-        const rightY = 42;
-        const rightW = 234;
-        const rightH = 450;
-
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-        ctx.fillRect(rightX, rightY, rightW, rightH);
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(rightX, rightY, rightW, rightH);
-
-        const tab1W = 114;
-        const tab2W = 104;
-        const tabH = 26;
-
-        if (inputManager.isClickInRect(rightX + 6, rightY + 6, tab1W, tabH)) {
-            state.assetTab = 'editor';
-        }
-        if (inputManager.isClickInRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH)) {
-            state.assetTab = 'dossier';
-        }
-
-        // Tab 1 Button
-        ctx.fillStyle = state.assetTab === 'editor' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)';
-        ctx.fillRect(rightX + 6, rightY + 6, tab1W, tabH);
-        ctx.strokeStyle = state.assetTab === 'editor' ? '#38bdf8' : '#334155';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(rightX + 6, rightY + 6, tab1W, tabH);
-        ctx.fillStyle = state.assetTab === 'editor' ? '#38bdf8' : '#94a3b8';
-        ctx.font = 'bold 9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('🛠️ ALIGNMENT', rightX + 6 + tab1W / 2, rightY + 17);
-
-        // Tab 2 Button
-        ctx.fillStyle = state.assetTab === 'dossier' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)';
-        ctx.fillRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH);
-        ctx.strokeStyle = state.assetTab === 'dossier' ? '#a855f7' : '#334155';
-        ctx.strokeRect(rightX + 6 + tab1W + 4, rightY + 6, tab2W, tabH);
-        ctx.fillStyle = state.assetTab === 'dossier' ? '#a855f7' : '#94a3b8';
-        ctx.fillText('📊 STATS', rightX + 6 + tab1W + 4 + tab2W / 2, rightY + 17);
-
-        if (state.assetTab === 'editor') {
-            this.editorPanel.render(ctx, state, currentEntity, currentAnimKey, totalFrames, context);
-        } else {
-            const bitmap = spriteParser.getBitmap(currentEntity.spriteKey, currentAnimKey, state.assetFrameIdx, currentEntity.forcePack || null);
-            this.dossierPanel.render(ctx, state, currentEntity, currentAnimKey, totalFrames, entityAnimData, bitmap, context);
-        }
+        // Right Column Studio Inspector Panel
+        this.editorPanel.render(ctx, state, currentEntity, currentAnimKey, totalFrames, context);
 
         // Toast notification
         if (state.toastTimer > 0) {
