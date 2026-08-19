@@ -81,9 +81,10 @@ export class TitleSystem {
 
             const title = this.titleCatalog[id];
             if (context && context.sage) {
-                context.sage.triggerLore(
-                    `« REPORT: GREAT SAGE — New Title Acquired: [${title.name.toUpperCase()}]. Bonus: ${title.bonus} »`,
-                    4.0
+                context.sage.notify(
+                    '« ❖ TITLE ACQUIRED ❖ »',
+                    `« Notice: New Title [${title.name}] unlocked! Passive Bonus: ${title.bonus} »`,
+                    { type: 'skill_acquired', duration: 4.5, sound: 'level_up' }
                 );
             }
             if (context && context.floaterQueue) {
