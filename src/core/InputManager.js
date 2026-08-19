@@ -35,7 +35,8 @@ export class InputManager {
     this.mouseX = 0;
     this.mouseY = 0;
     this.mouseClicked = false;
-    this.previousMouseClicked = false;
+    this.mouseJustPressed = false;
+    this.pendingClicks = [];
 
     window.addEventListener('keydown', this.onKeyDown.bind(this));
     window.addEventListener('keyup', this.onKeyUp.bind(this));
@@ -58,6 +59,8 @@ export class InputManager {
     window.addEventListener('mousedown', (e) => {
       updateMousePos(e);
       this.mouseClicked = true;
+      this.mouseJustPressed = true;
+      this.pendingClicks.push({ x: this.mouseX, y: this.mouseY });
     });
 
     window.addEventListener('mouseup', (e) => {
@@ -85,17 +88,31 @@ export class InputManager {
   }
 
   update() {
+    // Kept for backward compatibility
+  }
+
+  endFrame() {
+    this.mouseJustPressed = false;
+    this.pendingClicks = [];
     this.previousKeys = { ...this.keys };
-    this.previousMouseClicked = this.mouseClicked;
   }
 
   isJustClicked() {
-    return this.mouseClicked && !this.previousMouseClicked;
+    return this.mouseJustPressed || this.pendingClicks.length > 0;
   }
 
   isClickInRect(x, y, w, h) {
-    if (!this.isJustClicked()) return false;
-    return this.mouseX >= x && this.mouseX <= x + w && this.mouseY >= y && this.mouseY <= y + h;
+    if (this.mouseJustPressed && this.mouseX >= x && this.mouseX <= x + w && this.mouseY >= y && this.mouseY <= y + h) {
+      return true;
+    }
+    for (let i = 0; i < this.pendingClicks.length; i++) {
+      const p = this.pendingClicks[i];
+      if (p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h) {
+        this.pendingClicks.splice(i, 1);
+        return true;
+      }
+    }
+    return false;
   }
 
   isHoverInRect(x, y, w, h) {

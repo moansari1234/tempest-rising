@@ -27,32 +27,37 @@ export class AssetLibraryView {
 
         // --- 1. KEYBOARD & MOUSE INPUT PROCESSING ---
         // Cycle Selected Entity (A / D or Left / Right)
-        if (inputManager.isActionJustPressed('moveRight')) {
+        if (inputManager.isActionJustPressed('moveRight') || inputManager.keys['ArrowRight'] || inputManager.keys['d'] || inputManager.keys['D']) {
             state.assetEntityIdx = (state.assetEntityIdx + 1) % state.entitiesList.length;
             state.assetAnimIdx = 0;
             state.assetFrameIdx = 0;
             state.assetFrameTimer = 0;
-        } else if (inputManager.isActionJustPressed('moveLeft')) {
+            inputManager.consumeAction('moveRight');
+        } else if (inputManager.isActionJustPressed('moveLeft') || inputManager.keys['ArrowLeft'] || inputManager.keys['a'] || inputManager.keys['A']) {
             state.assetEntityIdx = (state.assetEntityIdx - 1 + state.entitiesList.length) % state.entitiesList.length;
             state.assetAnimIdx = 0;
             state.assetFrameIdx = 0;
             state.assetFrameTimer = 0;
+            inputManager.consumeAction('moveLeft');
         }
 
         // Cycle Selected Animation Clip (W / S or Up / Down)
-        if (inputManager.isActionJustPressed('jump')) {
+        if (inputManager.isActionJustPressed('moveUp') || inputManager.keys['ArrowUp'] || inputManager.keys['w'] || inputManager.keys['W']) {
             state.assetAnimIdx = (state.assetAnimIdx - 1 + animList.length) % animList.length;
             state.assetFrameIdx = 0;
             state.assetFrameTimer = 0;
-        } else if (inputManager.isActionJustPressed('crouch')) {
+            inputManager.consumeAction('moveUp');
+        } else if (inputManager.isActionJustPressed('moveDown') || inputManager.keys['ArrowDown'] || inputManager.keys['s'] || inputManager.keys['S']) {
             state.assetAnimIdx = (state.assetAnimIdx + 1) % animList.length;
             state.assetFrameIdx = 0;
             state.assetFrameTimer = 0;
+            inputManager.consumeAction('moveDown');
         }
 
         // Spacebar Play / Pause Toggle
-        if (inputManager.isActionJustPressed('attackHeavy')) {
+        if (inputManager.isActionJustPressed('jump') || inputManager.keys['Space'] || inputManager.keys[' ']) {
             state.assetIsPaused = !state.assetIsPaused;
+            inputManager.consumeAction('jump');
         }
 
         // Equip Active Skin into Gameplay (Enter / E)

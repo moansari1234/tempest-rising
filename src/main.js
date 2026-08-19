@@ -131,6 +131,9 @@ class Game {
     // Render whenever animation frame triggers
     this.render();
 
+    // Clear frame inputs (clicks and key states)
+    this.inputManager.endFrame();
+
     requestAnimationFrame((t) => this.loop(t));
   }
 
