@@ -389,7 +389,59 @@ export class SpriteParser {
       } catch (e) {}
     }
 
-    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites (Characters, Environment & Backgrounds)');
+    // 10. Load and Slice High-Resolution Special Attacks VFX Sheet (4x4 Grid)
+    try {
+      const vfxSheetImg = new Image();
+      vfxSheetImg.src = '/public/sprites/special_attacks_sheet.png';
+      await new Promise((resolve) => {
+        vfxSheetImg.onload = resolve;
+        vfxSheetImg.onerror = resolve;
+      });
+
+      if (vfxSheetImg.complete && vfxSheetImg.naturalWidth > 0) {
+        const frameW = Math.floor(vfxSheetImg.naturalWidth / 4);
+        const frameH = Math.floor(vfxSheetImg.naturalHeight / 4);
+        const vfxRows = [
+          'water_blade_proj',
+          'barrier_vfx',
+          'black_flame_vfx',
+          'megiddo_beam_vfx'
+        ];
+
+        for (let row = 0; row < 4; row++) {
+          const entityKey = vfxRows[row];
+          for (let col = 0; col < 4; col++) {
+            const frameCanvas = document.createElement('canvas');
+            frameCanvas.width = frameW;
+            frameCanvas.height = frameH;
+            const fCtx = frameCanvas.getContext('2d');
+            fCtx.drawImage(
+              vfxSheetImg,
+              col * frameW, row * frameH, frameW, frameH,
+              0, 0, frameW, frameH
+            );
+
+            // Chroma-key black background to pure transparent alpha
+            const imgData = fCtx.getImageData(0, 0, frameW, frameH);
+            const d = imgData.data;
+            for (let p = 0; p < d.length; p += 4) {
+              if (d[p] < 24 && d[p + 1] < 24 && d[p + 2] < 24) {
+                d[p + 3] = 0;
+              }
+            }
+            fCtx.putImageData(imgData, 0, 0);
+
+            const bitmap = await createImageBitmap(frameCanvas);
+            this.cache.set(`${entityKey}_idle_${col}`, bitmap);
+          }
+        }
+        console.log('[SpriteParser] Loaded & Sliced Special Attacks VFX Sheet (4x4 Grid)');
+      }
+    } catch (e) {
+      console.warn('[SpriteParser] Could not load special_attacks_sheet.png:', e);
+    }
+
+    console.log('[SpriteParser] Loaded', this.cache.size, 'total pixel art sprites (Characters, Environment, VFX & Backgrounds)');
   }
 
   getBitmap(entityKey, animKey, frameIndex, forceSkin = null) {
