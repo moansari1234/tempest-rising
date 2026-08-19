@@ -127,6 +127,7 @@ class Game {
     
     this.lastTime = timeInSeconds;
     this.accumulator += frameTime;
+    this.context._frameDt = frameTime;
 
     // Fixed timestep update for logic/physics
     while (this.accumulator >= this.timeStep) {

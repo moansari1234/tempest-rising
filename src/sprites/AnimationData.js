@@ -1,6 +1,6 @@
 export const AnimationData = {
   rimuru: {
-    idle: { frameTime: 0.85, frames: 4, loop: true }, // Gentle, tranquil gelatinous breathing cycle (3.4s)
+    idle: { frameTime: 1.20, frames: 4, loop: true }, // Ultra-smooth tranquil gelatinous breathing cycle (4.8s)
     walk: { frameTime: 0.14, frames: 4, loop: true },
     run: { frameTime: 0.09, frames: 4, loop: true },
     jump: { frameTime: 0.12, frames: 4, loop: false },
