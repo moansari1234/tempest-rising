@@ -204,7 +204,7 @@ export class CombatSystem {
       const eHealth = world.getComponent(eId, Health);
       if (eHealth && !eHealth.alive) {
         if (eHealth.decayTimer === undefined) {
-          eHealth.decayTimer = 3.5; // 3.5 seconds to devour before dissolving
+          eHealth.decayTimer = 8.0; // 8.0 seconds to devour before dissolving into magicules
         }
         eHealth.decayTimer -= dt;
         if (eHealth.decayTimer <= 0) {

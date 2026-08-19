@@ -248,9 +248,25 @@ export class RenderSystem {
               ctx.globalAlpha = Math.sin(performance.now() / 30) > 0 ? 1.0 : 0.3;
           }
 
-          // Corpse dissolving fade out
-          if (health && !health.alive && health.decayTimer !== undefined && health.decayTimer < 1.0) {
-              ctx.globalAlpha *= Math.max(0, health.decayTimer);
+          // Corpse dissolving fade out over 2.5s with rising magicule particles
+          if (health && !health.alive && health.decayTimer !== undefined) {
+              if (health.decayTimer < 2.5) {
+                  ctx.globalAlpha *= Math.max(0, health.decayTimer / 2.5);
+              }
+              // Shimmering Magicule Rising Particles
+              const now = performance.now();
+              const cX = transform.x + transform.width / 2;
+              const cY = transform.y + transform.height / 2;
+              for (let m = 0; m < 3; m++) {
+                  const mOffset = ((now / 15 + m * 40) % 60);
+                  const mX = cX + Math.sin((now / 120) + m) * 16;
+                  const mY = cY - mOffset;
+                  const mAlpha = Math.max(0, 1 - (mOffset / 60));
+                  ctx.fillStyle = m % 2 === 0 ? `rgba(56, 189, 248, ${mAlpha * 0.8})` : `rgba(250, 204, 21, ${mAlpha * 0.8})`;
+                  ctx.beginPath();
+                  ctx.arc(mX, mY, 1.5, 0, Math.PI * 2);
+                  ctx.fill();
+              }
           }
           
           // Calculate integer-scaled display dimensions
@@ -403,16 +419,16 @@ export class RenderSystem {
                 const badgeY = transform.y - 14;
                 
                 ctx.save();
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-                ctx.fillRect(badgeX - 36, badgeY - 11, 72, 16);
+                ctx.fillStyle = 'rgba(10, 15, 26, 0.92)';
+                ctx.fillRect(badgeX - 48, badgeY - 12, 96, 18);
                 ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(badgeX - 36, badgeY - 11, 72, 16);
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(badgeX - 48, badgeY - 12, 96, 18);
                 
-                ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
-                ctx.font = 'bold 11px monospace';
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('[E] DEVOUR', badgeX, badgeY + 1);
+                ctx.fillText('« [E] PREDATOR »', badgeX, badgeY + 1);
                 ctx.restore();
             }
             continue;
